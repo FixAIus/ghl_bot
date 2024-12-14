@@ -3,6 +3,7 @@ import os
 
 app = Flask(__name__)
 
+deez = os.getenv("tezt")
 
 @app.route('/')
 def index():
@@ -12,7 +13,7 @@ def index():
 @app.route('/firstTest', methods=['POST'])
 def test():
     data = request.json
-    return jsonify({"the data": data})
+    return jsonify({"the data": deez, "also": data})
 
 
 if __name__ == '__main__':
