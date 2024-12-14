@@ -9,7 +9,7 @@ def index():
     return jsonify({"okokok": "trainyuh🚅"})
 
 
-@app.route('/firstTest', methods=['GET'])
+@app.route('/firstTest', methods=['POST'])
 def test():
     data = request.json
     return jsonify({"the data": data})
