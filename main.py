@@ -16,24 +16,35 @@ def test():
     return jsonify({"the data": deez, "also": data})
 
 
-def upsert_variable(name, value):
-    mutation = f"""
-    mutation {{
-      variableUpsert(
-        input: {{
-          projectId: "{PROJECT_ID}"
-          environmentId: "{ENVIRONMENT_ID}"
-          serviceId: "{SERVICE_ID}"
-          name: "{name}"
-          value: "{value}"
-        }}
-      )
-    }}
-    """
-    response = requests.post(API_URL, headers=HEADERS, json={"query": mutation})
-    if response.status_code != 200:
-        print(f"Failed to upsert variable: {name}. Status Code: {response.status_code}")
+PROJECT_ID = os.getenv("RAILWAY_PROJECT_ID")
+ENVIRONMENT_ID = os.getenv("RAILWAY_ENVIRONMENT_ID")
+SERVICE_ID = os.getenv("RAILWAY_SERVICE_ID")
+API_URL = "https://backboard.railway.com/graphql/v2"
+HEADERS = {
+"Authorization": f"Bearer {API_TOKEN}",
+"Content-Type": "application/json",
+}
 
+def upsert_variable(name, value):
+    try:
+        mutation = f"""
+        mutation {{
+          variableUpsert(
+            input: {{
+              projectId: "{PROJECT_ID}"
+              environmentId: "{ENVIRONMENT_ID}"
+              serviceId: "{SERVICE_ID}"
+              name: "{name}"
+              value: "{value}"
+            }}
+          )
+        }}
+        """
+        response = requests.post(API_URL, headers=HEADERS, json={"query": mutation})
+        if response.status_code != 200:
+            print(f"Failed to upsert variable: {name}. Status Code: {response.status_code}")
+    except Exception as e:
+        print('error')
 
         
 async def resetKeys():
