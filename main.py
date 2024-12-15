@@ -2,7 +2,9 @@ from flask import Flask, jsonify, request
 import time
 import asyncio
 import os
-import requests  # Import missing requests module
+import requests
+from refresh_tokens import refresh_tokens
+from threading import Thread
 
 app = Flask(__name__)
 
@@ -68,9 +70,9 @@ async def resetKeys():
             error = True
 
 
-if __name__ == '__main__':
-    # Start the Flask app
+if __name__ == "__main__":
+    # Enable or disable token refreshing by commenting/uncommenting this line:
+    refresh_thread = Thread(target=refresh_tokens, args=(30,), daemon=True)
+    refresh_thread.start()
     app.run(debug=True, port=os.getenv("PORT", default=5000))
     
-    # Run resetKeys asynchronously
-    asyncio.run(resetKeys())
