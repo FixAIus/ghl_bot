@@ -47,7 +47,7 @@ async def resetKeys():
             upsert_variable("refresh", new_refresh)
             upsert_variable("token", new_token)
             time.sleep(30)
-        except Exception e:
+        except Exception as e:
             #handle errors
             error = True
         
