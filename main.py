@@ -14,9 +14,14 @@ def index():
 
 
 @app.route('/firstTest', methods=['POST'])
-def test():
-    data = request.json
-    return jsonify({"also": data})  # Removed undefined variable 'deez'
+def log(message, level="info", **kwargs):
+    """
+    Logs a structured message to Railway logs in JSON format.
+    """
+    log_entry = {"msg": message, "level": level}
+    log_entry.update(kwargs)
+    print(json.dumps(log_entry))
+    return jsonify(json.dumps(log_entry))
 
 
 # Environment variables
