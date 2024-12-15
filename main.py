@@ -14,10 +14,12 @@ def index():
 
 
 @app.route('/firstTest', methods=['POST'])
-def log(message, level="info", **kwargs):
+def log(level="info", **kwargs):
     """
     Logs a structured message to Railway logs in JSON format.
     """
+    data = request.json
+    message = data.get("msg")
     log_entry = {"msg": message, "level": level}
     log_entry.update(kwargs)
     print(json.dumps(log_entry))
