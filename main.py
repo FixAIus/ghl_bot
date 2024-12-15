@@ -38,7 +38,7 @@ def upsert_variable(name, value):
         
 async def resetKeys():
     error = False
-    while(!error):
+    while not error:
         try:
             token = os.getenv("token")
             refresh = os.getenv("refresh")
@@ -46,6 +46,7 @@ async def resetKeys():
             new_refresh = reftesh + 1
             upsert_variable("refresh", new_refresh)
             upsert_variable("token", new_token)
+            time.sleep(30)
         except Exception e:
             #handle errors
             error = True
