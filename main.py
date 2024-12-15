@@ -58,7 +58,7 @@ async def resetKeys():
             token = os.getenv("token")
             refresh = int(os.getenv("refresh", 0))  # Ensure refresh is treated as an integer
             print(f"token: {token}\nrefresh: {refresh}")
-            new_token = f"{token}{refresh}"
+            new_token = token+refresh
             new_refresh = refresh + 1
             upsert_variable("refresh", new_refresh)
             upsert_variable("token", new_token)
