@@ -4,7 +4,7 @@ import json
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Toggle this to enable/disable the loop
-ENABLE_LOOP = False
+ENABLE_LOOP = True
 
 # Environment Variables
 RW_PROJECT_ID = os.getenv("RAILWAY_PROJECT_ID")
