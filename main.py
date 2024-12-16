@@ -3,6 +3,17 @@ import requests
 import json
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from flask import Flask, jsonify
+import os
+
+app = Flask(__name__)
+
+
+@app.route('/')
+def index():
+    return jsonify({"Choo Choo": "Welcome to your Flask app 🚅"})
+
+
 # Step 1: Load environment variables and log project info
 PROJECT_ID = os.getenv("RAILWAY_PROJECT_ID")
 ENVIRONMENT_ID = os.getenv("RAILWAY_ENVIRONMENT_ID")
@@ -99,3 +110,6 @@ if __name__ == "__main__":
             pass  # Infinite loop to keep the script alive for the scheduler
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
+
+if __name__ == '__main__':
+    app.run(debug=True, port=os.getenv("PORT", default=5000))
