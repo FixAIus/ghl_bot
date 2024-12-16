@@ -2,7 +2,6 @@ import os
 import requests
 import json
 from flask import Flask, jsonify, request
-import traceback
 
 app = Flask(__name__)
 
@@ -75,7 +74,7 @@ def move_convo_forward():
 
         
         ##### Retrieve messages #####
-        #GHL_TOKEN = os.getenv("GHL_ACCESS")
+        GHL_TOKEN = os.getenv("GHL_ACCESS")
         messages_response = requests.get(
             f"https://services.leadconnectorhq.com/conversations/{ghl_convo_id}/messages",
             headers={
@@ -191,8 +190,7 @@ def move_convo_forward():
 
     except Exception as e:
         log("error", "Unhandled exception",
-            error=str(e),
-            traceback=traceback.format_exc())
+            error=str(e))
         return jsonify({"error": str(e)}), 500
 
 
