@@ -1,7 +1,7 @@
 import os
 import requests
 import json
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import os
 
 app = Flask(__name__)
@@ -199,25 +199,19 @@ def move_convo_forward():
 @app.route('/testEndpoint', methods=['POST'])
 def possibleFormat():
     data = request.json
-    thread_id = data.get("thread_id")
-    assistant_id = data.get("assistant_id")
-    ghl_contact_id = data.get("ghl_contact_id")
-    ghl_recent_message = data.get("ghl_recent_message")
-    ghl_convo_id = data.get("ghl_convo_id")
-    log("info", "Received request parameters", 
-        thread_id=thread_id,
-        assistant_id=assistant_id,
-        ghl_contact_id=ghl_contact_id,
-        ghl_recent_message=ghl_recent_message,
-        ghl_convo_id=ghl_convo_id)
+    log("info", "Received request parameters", **{
+        k: data.get(k) for k in [
+            "thread_id", "assistant_id", "ghl_contact_id", 
+            "ghl_recent_message", "ghl_convo_id"
+        ]
+    })
     return jsonify({
-        "stop": 'handoff', 
+        "stop": "handoff",
         "technical_bug": "run_status",
         "ai_response": "This is a test response",
         "ghl_convo_id": "test_convo_id",
         "error": "test error"
-        }
-    )
+    })
 
 
 if __name__ == '__main__':
