@@ -5,7 +5,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 # Constants
 API_URL = "https://backboard.railway.app/graphql/v2"
-ENABLE_LOOP = False  # Toggle this to enable/disable the loop
+ENABLE_LOOP = True  # Toggle this to enable/disable the loop
 
 # Environment Variables
 PROJECT_ID = os.getenv("RAILWAY_PROJECT_ID")
