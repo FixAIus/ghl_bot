@@ -3,50 +3,44 @@ import requests
 import json
 from apscheduler.schedulers.background import BackgroundScheduler
 
+# Constants
+API_URL = "https://backboard.railway.app/graphql/v2"
+ENABLE_LOOP = True  # Toggle this to enable/disable the loop
 
-# Helper function for logging
-def log(message, level="info", **kwargs):
-    """Centralized logging with JSON format."""
-    log_entry = {"msg": message, "level": level}
-    log_entry.update(kwargs)
-    print(json.dumps(log_entry))
+# Environment Variables
+PROJECT_ID = os.getenv("RAILWAY_PROJECT_ID")
+ENVIRONMENT_ID = os.getenv("RAILWAY_ENVIRONMENT_ID")
+SERVICE_ID = os.getenv("RAILWAY_SERVICE_ID")
+API_TOKEN = os.getenv("RAILWAY_API_TOKEN")
+HEADERS = {
+    "Authorization": f"Bearer {API_TOKEN}",
+    "Content-Type": "application/json",
+}
 
+# Utility Functions
+def log(level, msg, **kwargs):
+    """Centralized logger for structured JSON logging."""
+    print(json.dumps({"level": level, "msg": msg, **kwargs}))
 
-# Step 1: Load and validate environment variables
-def load_env_vars():
-    """Load required environment variables and validate them."""
-    required_vars = ["RAILWAY_PROJECT_ID", "RAILWAY_ENVIRONMENT_ID", "RAILWAY_SERVICE_ID", "RAILWAY_API_TOKEN"]
-    env_vars = {var: os.getenv(var) for var in required_vars}
+log('info', 'Starting Script')
 
-    missing_vars = [var for var, value in env_vars.items() if value is None]
-    if missing_vars:
-        log(f"Missing required environment variables: {', '.join(missing_vars)}", "error")
+def validate_environment():
+    """Validates the required environment variables."""
+    if not all([PROJECT_ID, ENVIRONMENT_ID, SERVICE_ID, API_TOKEN]):
+        log("error", "Missing required environment variables.")
         exit(1)
 
-    return {
-        "PROJECT_ID": env_vars["RAILWAY_PROJECT_ID"],
-        "ENVIRONMENT_ID": env_vars["RAILWAY_ENVIRONMENT_ID"],
-        "SERVICE_ID": env_vars["RAILWAY_SERVICE_ID"],
-        "API_URL": "https://backboard.railway.app/graphql/v2",
-        "HEADERS": {
-            "Authorization": f"Bearer {env_vars['RAILWAY_API_TOKEN']}",
-            "Content-Type": "application/json",
-        },
-    }
 
-
-# Step 2: Define the `upsert_variable` function
-def upsert_variable(name, value, config):
-    """Upserts a variable into Railway."""
-    log(f"Upserting variable '{name}' with value '{value}'")
-
+def upsert_variable(name, value):
+    """Upserts a variable in Railway."""
+    log("info", f"Attempting to upsert variable: {name}", value=value)
     mutation = f"""
     mutation {{
       variableUpsert(
         input: {{
-          projectId: "{config['PROJECT_ID']}"
-          environmentId: "{config['ENVIRONMENT_ID']}"
-          serviceId: "{config['SERVICE_ID']}"
+          projectId: "{PROJECT_ID}"
+          environmentId: "{ENVIRONMENT_ID}"
+          serviceId: "{SERVICE_ID}"
           name: "{name}"
           value: "{value}"
         }}
@@ -54,49 +48,58 @@ def upsert_variable(name, value, config):
     }}
     """
     try:
-        response = requests.post(config["API_URL"], headers=config["HEADERS"], json={"query": mutation})
+        response = requests.post(API_URL, headers=HEADERS, json={"query": mutation})
         if response.status_code == 200:
-            log(f"Successfully updated '{name}'", "info", value=value)
+            log("info", f"Successfully updated variable: {name}", value=value)
         else:
-            log(f"Failed to update '{name}'", "error", status_code=response.status_code, response_text=response.text)
+            log("error", f"Failed to update variable: {name}", status_code=response.status_code, response=response.text)
     except Exception as e:
-        log(f"Error during upsert of '{name}': {e}", "error")
+        log("error", f"Error during variable upsert: {e}")
 
 
-# Step 3: Define the `token_operations` function
-def token_operations(config):
-    """Performs token operations: increments and upserts token values."""
+def token_operations():
+    """Handles token refresh and upsert operations."""
     try:
         refresh = os.getenv("REFRESH")
         token = os.getenv("TOKEN")
 
         if refresh is None or token is None:
-            log("Environment variables 'REFRESH' or 'TOKEN' are not set", "error")
+            log("error", "Environment variables 'REFRESH' or 'TOKEN' are not set.")
             exit(1)
 
-        refresh, token = int(refresh), int(token)
-        new_token, new_refresh = token + refresh, refresh + 1
+        refresh = int(refresh)
+        token = int(token)
 
-        upsert_variable("token", new_token, config)
-        upsert_variable("refresh", new_refresh, config)
+        # Update values
+        new_token = token + refresh
+        new_refresh = refresh + 1
 
-        log("Token operations completed", "info", new_token=new_token, new_refresh=new_refresh)
+        # Upsert values to Railway
+        upsert_variable("token", new_token)
+        upsert_variable("refresh", new_refresh)
+
+        log("info", "Token operations completed", new_token=new_token, new_refresh=new_refresh)
     except Exception as e:
-        log(f"Error in token_operations: {e}", "error")
+        log("error", f"Error in token_operations: {e}")
 
 
-# Main script execution
+# Main Script
 if __name__ == "__main__":
-    config = load_env_vars()
-    log("Scheduler starting")
+    log("info", "Starting script")
+    validate_environment()
 
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(lambda: token_operations(config), "interval", seconds=30)
-    scheduler.start()
+    if ENABLE_LOOP:
+        log("info", "Loop enabled. Scheduler starting.")
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(token_operations, "interval", seconds=30)
+        scheduler.start()
 
-    try:
-        log("Script is running. Press Ctrl+C to stop.")
-        scheduler._event.wait()  # Keeps the script running
-    except (KeyboardInterrupt, SystemExit):
-        log("Scheduler shutting down")
-        scheduler.shutdown()
+        try:
+            while True:
+                pass  # Infinite loop to keep the script alive for Railway
+        except (KeyboardInterrupt, SystemExit):
+            scheduler.shutdown()
+            log("info", "Scheduler stopped.")
+    else:
+        log("info", "Loop disabled. Running token operations once.")
+        token_operations()
