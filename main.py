@@ -5,7 +5,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 # Constants
 API_URL = "https://backboard.railway.app/graphql/v2"
-ENABLE_LOOP = False  # Toggle this to enable/disable the loop
+ENABLE_LOOP = True  # Toggle this to enable/disable the loop
 
 # Environment Variables
 PROJECT_ID = os.getenv("RAILWAY_PROJECT_ID")
@@ -32,7 +32,6 @@ def validate_environment():
 
 def upsert_variable(name, value):
     """Upserts a variable in Railway."""
-    log("info", f"Attempting to upsert variable: {name}", value=value)
     mutation = f"""
     mutation {{
       variableUpsert(
@@ -48,12 +47,15 @@ def upsert_variable(name, value):
     """
     try:
         response = requests.post(API_URL, headers=HEADERS, json={"query": mutation})
-        if response.status_code == 200:
-            log("info", f"Successfully updated variable: {name}", value=value)
-        else:
-            log("error", f"Failed to update variable: {name}", status_code=response.status_code, response=response.text)
+        log(
+            "info" if response.status_code == 200 else "error",
+            f"Upsert variable: {name}",
+            value=value,
+            status_code=response.status_code,
+            response=response.text,
+        )
     except Exception as e:
-        log("error", f"Error during variable upsert: {e}")
+        log("error", f"Error during variable upsert: {name}", error=str(e))
 
 
 def token_operations():
@@ -69,6 +71,9 @@ def token_operations():
         refresh = int(refresh)
         token = int(token)
 
+        # Log loaded values
+        log("info", "Loaded token values", token=token, refresh=refresh)
+
         # Update values
         new_token = token + refresh
         new_refresh = refresh + 1
@@ -77,9 +82,10 @@ def token_operations():
         upsert_variable("token", new_token)
         upsert_variable("refresh", new_refresh)
 
-        log("info", "Token operations completed", new_token=new_token, new_refresh=new_refresh)
+    except ValueError as ve:
+        log("error", "Environment variable parsing error", error=str(ve))
     except Exception as e:
-        log("error", f"Error in token_operations: {e}")
+        log("error", "Error in token_operations", error=str(e))
 
 
 # Main Script
