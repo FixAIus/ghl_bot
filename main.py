@@ -2,6 +2,10 @@ import os
 import requests
 import json
 from flask import Flask, jsonify, request
+from openai import OpenAI
+
+
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = Flask(__name__)
 
