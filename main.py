@@ -167,7 +167,7 @@ if __name__ == "__main__":
     if ENABLE_LOOP:
         log("info", "Loop enabled. Scheduler starting.")
         scheduler = BackgroundScheduler()
-        scheduler.add_job(token_operations, "interval", seconds=30.5)
+        scheduler.add_job(token_operations, "interval", hours=23.5)
         scheduler.start()
 
         try:
