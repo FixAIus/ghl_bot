@@ -2,7 +2,7 @@ import os
 import requests
 import json
 from flask import Flask, jsonify, request
-import os
+import traceback
 
 app = Flask(__name__)
 
@@ -75,6 +75,7 @@ def move_convo_forward():
 
         
         ##### Retrieve messages #####
+        #GHL_TOKEN = os.getenv("GHL_ACCESS")
         messages_response = requests.get(
             f"https://services.leadconnectorhq.com/conversations/{ghl_convo_id}/messages",
             headers={
@@ -199,7 +200,7 @@ def move_convo_forward():
 @app.route('/testEndpoint', methods=['POST'])
 def possibleFormat():
     data = request.json
-    log("info", "Received request parameters", **{
+    log("info", "Test Request", **{
         k: data.get(k) for k in [
             "thread_id", "assistant_id", "ghl_contact_id", 
             "ghl_recent_message", "ghl_convo_id"
