@@ -113,6 +113,8 @@ def move_convo_forward():
         ]
         if ghl_recent_message in [msg["body"] for msg in all_messages]:
             new_messages = new_messages[:[msg["body"] for msg in all_messages].index(ghl_recent_message) + 1]
+            new_messages = new_messages[::-1]
+
 
         if not new_messages:
             log("info", "No new messages to process", 
