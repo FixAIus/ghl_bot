@@ -38,7 +38,6 @@ def upsert_variable(name, value):
         input: {{
           projectId: "{PROJECT_ID}"
           environmentId: "{ENVIRONMENT_ID}"
-          serviceId: "{SERVICE_ID}"
           name: "{name}"
           value: "{value}"
         }}
