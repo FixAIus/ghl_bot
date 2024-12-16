@@ -96,20 +96,17 @@ def token_operations():
         print(json.dumps({"msg": f"Error in token_operations: {e}", "level": "error"}))
 
 
-# Step 4: Run `token_operations` every 30 seconds using APScheduler
-if __name__ == "__main__":
+
+if __name__ == '__main__':
+    app.run(debug=True, port=os.getenv("PORT", default=5000))
     print(json.dumps({"msg": "Scheduler starting", "level": "info"}))  # Log scheduler start
 
     scheduler = BackgroundScheduler()
     scheduler.add_job(token_operations, "interval", seconds=30)
     scheduler.start()
-
     # Keep the script running
     try:
         while True:
             pass  # Infinite loop to keep the script alive for the scheduler
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
-
-if __name__ == '__main__':
-    app.run(debug=True, port=os.getenv("PORT", default=5000))
