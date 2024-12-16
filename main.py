@@ -49,7 +49,7 @@ def fetch_variables():
         response = requests.post(RW_API_URL, headers=RW_HEADERS, json={"query": query})
         log(
             "info" if response.status_code == 200 else "error",
-            "Fetched variables",
+            "#1 Fetch RW Environment Variables",
             status_code=response.status_code,
             response_text=response.text,
         )
@@ -83,7 +83,7 @@ def upsert_variable(name, value):
         response = requests.post(RW_API_URL, headers=RW_HEADERS, json={"query": mutation})
         log(
             "info" if response.status_code == 200 else "error",
-            f"Upsert variable: {name}",
+            f"#3 Upsert {name} to RW Environment",
             value=value,
             status_code=response.status_code,
             response_text=response.text,
@@ -111,7 +111,7 @@ def refresh_tokens(old_access, old_refresh):
         response = requests.post(GHL_URL, data=ghl_payload, headers=ghl_headers)
         log(
             "info" if response.status_code == 200 else "error",
-            "Refresh tokens",
+            "#2 Refresh GHL Tokens",
             status_code=response.status_code,
             response_text=response.text,
         )
@@ -141,7 +141,7 @@ def token_operations():
             return
 
         # Log loaded values
-        log("info", "Loaded token values", GHL_ACCESS=old_access, GHL_REFRESH=old_refresh)
+        log("info", "#1 <Loaded token values>", GHL_ACCESS=old_access, GHL_REFRESH=old_refresh)
 
         # Refresh tokens using the GHL API
         new_access, new_refresh = refresh_tokens(old_access, old_refresh)
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     if ENABLE_LOOP:
         log("info", "Loop enabled. Scheduler starting.")
         scheduler = BackgroundScheduler()
-        scheduler.add_job(token_operations, "interval", hours=23.5)
+        scheduler.add_job(token_operations, "interval", seconds=30.5)
         scheduler.start()
 
         try:
