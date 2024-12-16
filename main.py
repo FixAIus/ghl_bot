@@ -36,11 +36,11 @@ def upsert_variable(name, value):
     mutation {{
       variableUpsert(
         input: {{
-          projectId: '{PROJECT_ID}'
-          environmentId: '{ENVIRONMENT_ID}'
-          serviceId: '{SERVICE_ID}'
-          name: '{name}'
-          value: '{value}'
+          projectId: "{PROJECT_ID}"
+          environmentId: "{ENVIRONMENT_ID}"
+          serviceId: "{SERVICE_ID}"
+          name: "{name}"
+          value: "{value}"
         }}
       )
     }}
