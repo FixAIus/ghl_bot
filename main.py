@@ -3,6 +3,7 @@ import requests
 import json
 from apscheduler.schedulers.background import BackgroundScheduler
 
+
 # Constants
 API_URL = "https://backboard.railway.app/graphql/v2"
 ENABLE_LOOP = True  # Toggle this to enable/disable the loop
