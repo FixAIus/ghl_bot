@@ -1,5 +1,12 @@
 import json
+from flask import Flask, jsonify, request
 
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return jsonify({"okokok": "trainyuh🚅"})
 
 def log(message, level="info", **kwargs):
     """
@@ -11,3 +18,7 @@ def log(message, level="info", **kwargs):
 
 
 log(f"Hello fucker", variable='deez variable')
+
+
+if __name__ == '__main__':
+    app.run(debug=True, port=os.getenv("PORT", default=5000))
