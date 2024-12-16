@@ -60,15 +60,12 @@ def upsert_variable(name, value):
 def token_operations():
     """Handles token refresh and upsert operations."""
     try:
-        refresh = os.getenv("refresh")
-        token = os.getenv("token")
+        refresh = int(os.getenv("refresh"))
+        token = int(os.getenv("token"))
 
         if refresh is None or token is None:
-            log("error", "Environment variables 'REFRESH' or 'TOKEN' are not set.")
+            log("error", "Environment variables 'refresh' or 'token' are not set.")
             exit(1)
-
-        refresh = int(refresh)
-        token = int(token)
 
         # Log loaded values
         log("info", "Loaded token values", token=token, refresh=refresh)
