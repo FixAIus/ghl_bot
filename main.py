@@ -22,7 +22,6 @@ def log(level, msg, **kwargs):
     """Centralized logger for structured JSON logging."""
     print(json.dumps({"level": level, "msg": msg, **kwargs}))
 
-log('info', 'Starting Script')
 
 def validate_environment():
     """Validates the required environment variables."""
