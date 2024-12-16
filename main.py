@@ -57,14 +57,47 @@ def upsert_variable(name, value):
         log("error", f"Error during variable upsert: {name}", error=str(e))
 
 
+def fetch_variables():
+    """Fetches current variable values from the Railway API."""
+    query = f"""
+    query {{
+      variables(
+        projectId: "{PROJECT_ID}"
+        environmentId: "{ENVIRONMENT_ID}"
+      )
+    }}
+    """
+    try:
+        response = requests.post(API_URL, headers=HEADERS, json={"query": query})
+        if response.status_code == 200:
+            variables = response.json().get("data", {}).get("variables", {})
+            return {
+                "refresh": int(variables.get("refresh", 0)),
+                "token": int(variables.get("token", 0)),
+            }
+        else:
+            log(
+                "error",
+                "Failed to fetch variables",
+                status_code=response.status_code,
+                response_text=response.text,
+            )
+            return None
+    except Exception as e:
+        log("error", "Error during fetch_variables", error=str(e))
+        return None
+
+
 def token_operations():
     """Handles token refresh and upsert operations."""
     try:
-        refresh = int(os.getenv("refresh"))
-        token = int(os.getenv("token"))
+        variables = fetch_variables()
+        token = variables.get("token")
+        refresh = variables.get("refresh")
+        
 
-        if refresh is None or token is None:
-            log("error", "Environment variables 'refresh' or 'token' are not set.")
+        if not variables:
+            log("error", "Unable to load variables from API.")
             exit(1)
 
         # Log loaded values
