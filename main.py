@@ -2,7 +2,6 @@ import os
 from flask import Flask, jsonify, request
 from functions import (
     log,
-    extract_fields,
     validate_request_data,
     get_conversation_id,
     retrieve_and_compile_messages,
@@ -14,6 +13,8 @@ from functions import (
 app = Flask(__name__)
 
 
+
+
 @app.route('/moveConvoForward', methods=['POST'])
 def move_convo_forward():
     """
@@ -21,17 +22,12 @@ def move_convo_forward():
     Processes incoming messages and returns appropriate AI responses or function calls.
     """
     try:
-        # Validate request data
+        # Validate request data and handle conversation ID
         validated_fields = validate_request_data(request.json)
         if not validated_fields:
-            return jsonify({"error": "Missing required fields"}), 400
-
-        # Process conversation ID
+            return jsonify({"error": "Invalid request data"}), 400
+            
         ghl_convo_id = validated_fields["ghl_convo_id"]
-        if not ghl_convo_id or ghl_convo_id in ["", "null"]:
-            ghl_convo_id = get_conversation_id(validated_fields["ghl_contact_id"])
-            if not ghl_convo_id:
-                return jsonify({"error": "Failed to retrieve conversation ID"}), 500
 
         # Retrieve and process messages
         new_messages = retrieve_and_compile_messages(
@@ -46,7 +42,7 @@ def move_convo_forward():
         run_response, run_status, run_id = run_ai_thread(
             validated_fields["thread_id"],
             validated_fields["assistant_id"],
-            new_messages[::-1],
+            new_messages,
             validated_fields["ghl_contact_id"]
         )
 
@@ -86,6 +82,8 @@ def move_convo_forward():
         log("error", "GENERAL -- Unhandled exception occurred", 
             scope="General", error=str(e))
         return jsonify({"error": str(e)}), 500
+
+
 
 
 if __name__ == '__main__':

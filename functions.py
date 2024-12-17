@@ -12,37 +12,32 @@ def log(level, msg, **kwargs):
     print(json.dumps({"level": level, "msg": msg, **kwargs}))
 
 
-def extract_fields(data):
-    """Extract and structure fields from request data."""
-    required_fields = ["thread_id", "assistant_id", "ghl_contact_id", "ghl_recent_message"]
-    optional_fields = ["ghl_convo_id"]
-    
-    extracted_fields = {}
-    
-    # Extract required fields
-    for field in required_fields:
-        extracted_fields[field] = data.get(field)
-    
-    # Extract optional fields
-    for field in optional_fields:
-        extracted_fields[field] = data.get(field)
-    
-    return extracted_fields, required_fields
-
-
 def validate_request_data(data):
-    """Validate incoming request data and ensure all required fields are present."""
-    # Extract fields and get required fields list
-    fields, required_fields = extract_fields(data)
+    """
+    Validate request data, ensure required fields are present, and handle conversation ID retrieval.
+    Returns validated fields dictionary or None if validation fails.
+    """
+    # Define and extract required fields
+    required_fields = ["thread_id", "assistant_id", "ghl_contact_id", "ghl_recent_message"]
+    fields = {field: data.get(field) for field in required_fields}
+    fields["ghl_convo_id"] = data.get("ghl_convo_id")
     
-    # Validate required fields
-    if not all(fields.get(field) for field in required_fields):
-        log("error", f"GENERAL -- Missing required fields -- {fields.get('ghl_contact_id')}", 
+    # Check for missing required fields (excluding ghl_convo_id)
+    missing_fields = [field for field in required_fields if not fields[field]]
+    if missing_fields:
+        log("error", f"GENERAL -- Missing {', '.join(missing_fields)}", 
             scope="General", received_fields=fields)
         return None
-    
-    log("info", f"GENERAL -- Parsed incoming request -- {fields['ghl_contact_id']}", 
-        scope="General", **fields)
+        
+    # Try to get conversation ID if missing
+    if not fields["ghl_convo_id"] or fields["ghl_convo_id"] in ["", "null"]:
+        fields["ghl_convo_id"] = get_conversation_id(fields["ghl_contact_id"])
+        if not fields["ghl_convo_id"]:
+            log("error", "GENERAL -- Missing ghl_convo_id", 
+                scope="General", received_fields=fields)
+            return None
+
+    log("info", "GENERAL -- Valid Request", **fields)
     return fields
 
 
@@ -69,8 +64,8 @@ def get_conversation_id(ghl_contact_id):
             scope="Convo ID", response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
     
-    log("info", f"CONVO ID -- Successfully retrieved conversation ID -- {ghl_contact_id}", 
-        scope="Convo ID", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
+    #log("info", f"CONVO ID -- Successfully retrieved conversation ID -- {ghl_contact_id}", 
+        #scope="Convo ID", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
     return ghl_convo_id
 
 
