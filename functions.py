@@ -27,7 +27,7 @@ def extract_fields(data):
     for field in optional_fields:
         extracted_fields[field] = data.get(field)
 
-    log("Info", extracted_fields=extracted_fields, required_fields=required_fields)
+    log("Info", "extracted", extracted_fields=extracted_fields, required_fields=required_fields)
     return extracted_fields, required_fields
 
 
