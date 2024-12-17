@@ -28,14 +28,15 @@ def get_conversation_id(ghl_contact_id):
         params={"locationId": os.getenv('GHL_LOCATION_ID'), "contactId": ghl_contact_id}
     )
     if search_response.status_code != 200:
-        log("error", "CONVO ID -- API call failed", 
-            scope="Convo ID", status_code=search_response.status_code, response=search_response.text)
+        log("error", f"CONVO ID -- API call failed -- {ghl_contact_id}", 
+            scope="Convo ID", status_code=search_response.status_code, 
+            response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
 
     ghl_convo_id = search_response.json().get("conversations", [{}])[0].get("id")
     if not ghl_convo_id:
-        log("error", "CONVO ID -- No ID found", 
-            scope="Convo ID", response=search_response.text)
+        log("error", f"CONVO ID -- No ID found -- {ghl_contact_id}", 
+            scope="Convo ID", response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
     return ghl_convo_id
 
@@ -51,15 +52,17 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message):
         }
     )
     if messages_response.status_code != 200:
-        log("error", "GET MESSAGES -- API Call Failed", 
-            scope="Get Messages", ghl_convo_id=ghl_convo_id, response=messages_response.text, status_code=messages_response.status_code)
+        log("error", f"GET MESSAGES -- API Call Failed -- {ghl_contact_id}", 
+            scope="Get Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id,
+            status_code=messages_response.status_code, response=messages_response.text)
         return []
 
     all_messages = messages_response.json().get("messages", {}).get("messages", [])
     if not all_messages:
-        log("error", "GET MESSAGES -- No messages found", 
-            scope="Get Messages", api_response=messages_response.text, ghl_convo_id=ghl_convo_id)
+        log("error", f"GET MESSAGES -- No messages found -- {ghl_contact_id}", 
+            scope="Get Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
         return []
+
     # Compile new messages
     new_messages = []
     for msg in all_messages:
@@ -69,9 +72,8 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message):
             break
 
     if not new_messages:
-        log("info", "GET MESSAGES -- No new messages after filtering", 
-            scope="Get Messages", all_messages=all_messages, ghl_convo_id=ghl_convo_id)
-        return []
+        log("info", f"GET MESSAGES -- No new messages after filtering -- {ghl_contact_id}", 
+            scope="Get Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
     return new_messages[::-1]
 
 
@@ -79,8 +81,8 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message):
 def process_message_response(thread_id, run_id):
     ai_messages = openai_client.beta.threads.messages.list(thread_id=thread_id, run_id=run_id).data
     if not ai_messages:
-        log("error", "AI MESSAGE -- No messages found after run completion", 
-            scope="AI Message", run_id=run_id, thread_id=thread_id)
+        log("error", f"AI MESSAGE -- No messages found after run completion -- {thread_id}", 
+            scope="AI Message", run_id=run_id, thread_id=thread_id, ghl_convo_id=thread_id)
         return None
 
     ai_content = ai_messages[-1].content[0].text.value
@@ -98,6 +100,9 @@ def process_function_response(thread_id, run_id, run_response):
         tool_outputs=[{"tool_call_id": tool_call.id, "output": "success"}]
     )
     function_map = {"handoff": "handoff", "endConvo": "forced", "checkTier": "tier 1"}
+    log("info", f"AI FUNCTION -- Processed function call -- {thread_id}", 
+        scope="AI Function", tool_call_id=tool_call.id, 
+        run_id=run_id, function_name=tool_call.function.name, ghl_convo_id=thread_id)
     return function_map.get(tool_call.function.name, "Unexpected function")
 
 
@@ -110,8 +115,8 @@ def move_convo_forward():
         data = request.json
         required_fields = ["thread_id", "assistant_id", "ghl_contact_id", "ghl_recent_message"]
         if not all(field in data and data[field] for field in required_fields):
-            log("error", "GENERAL -- Missing required fields", 
-                scope="General", received_fields=data)
+            log("error", f"GENERAL -- Missing required fields -- {ghl_contact_id}", 
+                scope="General", received_fields=data, ghl_contact_id=ghl_contact_id)
             return jsonify({"error": "Missing required fields"}), 400
 
         thread_id = data["thread_id"]
@@ -120,7 +125,7 @@ def move_convo_forward():
         ghl_recent_message = data["ghl_recent_message"]
         ghl_convo_id = data.get("ghl_convo_id")
 
-        log("info", "GENERAL -- Parsed incoming request", 
+        log("info", f"GENERAL -- Parsed incoming request -- {ghl_contact_id}", 
             scope="General", thread_id=thread_id, assistant_id=assistant_id, ghl_contact_id=ghl_contact_id)
 
         # Retrieve conversation ID if not provided
@@ -128,43 +133,43 @@ def move_convo_forward():
             ghl_convo_id = get_conversation_id(ghl_contact_id)
             if not ghl_convo_id:
                 return jsonify({"error": "Failed to retrieve conversation ID"}), 500
-        log("info", "CONVO ID -- Successfully retrieved conversation ID", 
+        log("info", f"CONVO ID -- Successfully retrieved conversation ID -- {ghl_contact_id}", 
             scope="Convo ID", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
 
         # Retrieve and compile messages
         new_messages = retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message)
         if not new_messages:
             return jsonify({"error": "No new messages to process"}), 200
-        log("info", "GET MESSAGES -- Successfully compiled", 
-            scope="Get Messages", message=new_messages, ghl_convo_id=ghl_convo_id)
+        log("info", f"GET MESSAGES -- Successfully compiled -- {ghl_contact_id}", 
+            scope="Get Messages", message=new_messages, ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
 
         # Run AI Thread
         run_response = openai_client.beta.threads.runs.create_and_poll(
             thread_id=thread_id, assistant_id=assistant_id, additional_messages=new_messages
         )
         run_status, run_id = run_response.status, run_response.id
-        log("info", "AI RUN -- Thread run completed", 
-            scope="AI Run", run_status=run_status, run_id=run_id, thread_id=thread_id)
+        log("info", f"AI RUN -- Thread run completed -- {ghl_contact_id}", 
+            scope="AI Run", run_status=run_status, run_id=run_id, thread_id=thread_id, ghl_contact_id=ghl_contact_id)
 
         # Process run response
         if run_status == "completed":
             ai_content = process_message_response(thread_id, run_id)
             if ai_content:
-                log("info", "AI MESSAGE -- Successfully retrieved AI response", 
-                    scope="AI Message", run_id=run_id, thread_id=thread_id, ai_message=ai_content)
+                log("info", f"AI MESSAGE -- Successfully retrieved AI response -- {ghl_contact_id}", 
+                    scope="AI Message", run_id=run_id, thread_id=thread_id, ai_message=ai_content, ghl_contact_id=ghl_contact_id)
                 return jsonify({"ai_response": ai_content, "ghl_convo_id": ghl_convo_id}), 200
-            log("error", "AI MESSAGE -- No AI messages found", 
-                scope="AI Message", run_id=run_id, thread_id=thread_id)
+            log("error", f"AI MESSAGE -- No AI messages found -- {ghl_contact_id}", 
+                scope="AI Message", run_id=run_id, thread_id=thread_id, ghl_contact_id=ghl_contact_id)
             return jsonify({"error": "No AI messages found"}), 404
 
         elif run_status == "requires_action":
             stop_reason = process_function_response(thread_id, run_id, run_response)
-            log("info", "AI FUNCTION -- Processed function call", 
-                scope="AI Function", run_id=run_id, thread_id=thread_id, stop_reason=stop_reason)
+            log("info", f"AI FUNCTION -- Processed function call -- {ghl_contact_id}", 
+                scope="AI Function", run_id=run_id, thread_id=thread_id, stop_reason=stop_reason, ghl_contact_id=ghl_contact_id)
             return jsonify({"ghl_convo_id": ghl_convo_id, "stop": stop_reason}), 200
 
-        log("error", "AI RUN -- Run ended with non-success status", 
-            scope="AI Run", run_status=run_status, run_id=run_id, thread_id=thread_id)
+        log("error", f"AI RUN -- Run ended with non-success status -- {ghl_contact_id}", 
+            scope="AI Run", run_status=run_status, run_id=run_id, thread_id=thread_id, ghl_contact_id=ghl_contact_id)
         return jsonify({"stop": True, "technical_bug": run_status}), 200
 
     except Exception as e:
