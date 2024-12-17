@@ -85,6 +85,32 @@ def move_convo_forward():
 
 
 
+from flask import request, jsonify
+
+@app.route('/testEndpoint', methods=['POST'])
+def possibleFormat():
+    data = request.json
+    log("info", "Received request parameters", **{
+        k: data.get(k) for k in [
+            "thread_id", "assistant_id", "ghl_contact_id", 
+            "ghl_recent_message", "ghl_convo_id"
+        ]
+    })
+    return jsonify(
+        {
+            "response_type": "action, message, message_action",
+            "action": {
+                "type": "force end, handoff, add_contact_id",
+                "details": {
+                    "ghl_convo_id": "afdlja;ldf"
+                }
+            },
+            "message": "wwwwww"
+            
+        }
+    )
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=os.getenv("PORT", default=5000))
