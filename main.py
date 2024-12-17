@@ -46,7 +46,7 @@ def move_convo_forward():
         run_response, run_status, run_id = run_ai_thread(
             validated_fields["thread_id"],
             validated_fields["assistant_id"],
-            new_messages,
+            new_messages[::-1],
             validated_fields["ghl_contact_id"]
         )
 
