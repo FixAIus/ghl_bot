@@ -26,7 +26,8 @@ def extract_fields(data):
     # Extract optional fields
     for field in optional_fields:
         extracted_fields[field] = data.get(field)
-    
+
+    log("Info", extracted_fields=extracted_fields, required_fields=required_fields)
     return extracted_fields, required_fields
 
 
@@ -41,8 +42,7 @@ def validate_request_data(data):
             scope="General", received_fields=fields)
         return None
     
-    log("info", f"GENERAL -- Parsed incoming request -- {fields['ghl_contact_id']}", 
-        scope="General", **fields)
+    log("info", "This how fields look", returned_fields=fields, logged_fields=**fields)
     return fields
 
 
