@@ -2,7 +2,6 @@ import os
 from flask import Flask, jsonify, request
 from functions import (
     log,
-    extract_fields,
     validate_request_data,
     get_conversation_id,
     retrieve_and_compile_messages,
