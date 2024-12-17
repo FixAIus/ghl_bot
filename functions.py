@@ -42,7 +42,7 @@ def validate_request_data(data):
             scope="General", received_fields=fields)
         return None
     
-    log("info", "This how fields look", returned_fields=fields, logged_fields=**fields)
+    log("info", "This how fields look", returned_fields=fields, **fields)
     return fields
 
 
