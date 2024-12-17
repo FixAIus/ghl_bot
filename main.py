@@ -14,6 +14,29 @@ from functions import (
 app = Flask(__name__)
 
 
+
+
+@app.route('/testEndpoint', methods=['POST'])
+def possibleFormat():
+    try: 
+        validated_fields = validate_request_data(request.json)
+        
+        return jsonify({
+            "stop": "handoff",
+            "technical_bug": "run_status",
+            "ai_response": "This is a test response",
+            "ghl_convo_id": "test_convo_id",
+            "error": "test error"
+        })
+        
+    except Exception as e:
+        log("error", "GENERAL -- Unhandled exception occurred", 
+            scope="General", error=str(e))
+        return jsonify({"error": str(e)}), 500
+
+
+
+
 @app.route('/moveConvoForward', methods=['POST'])
 def move_convo_forward():
     """
