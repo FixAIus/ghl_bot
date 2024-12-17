@@ -10,7 +10,6 @@ openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 app = Flask(__name__)
 
 
-
 # Centralized logging function
 def log(level, msg, **kwargs):
     print(json.dumps({"level": level, "msg": msg, **kwargs}))
