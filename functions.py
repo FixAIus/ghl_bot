@@ -37,7 +37,7 @@ def validate_request_data(data):
                 scope="General", received_fields=fields)
             return None
 
-    log("info", "GENERAL -- Valid Request", fields**)
+    log("info", "GENERAL -- Valid Request", **fields)
     return fields
 
 
