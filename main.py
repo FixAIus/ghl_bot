@@ -52,13 +52,13 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message):
     )
     if messages_response.status_code != 200:
         log("error", "GET MESSAGES -- API Call Failed", 
-            scope="Get Messages", ghl_convo_id=ghl_convo_id, response=messages_response.text status_code=messages_response.status_code)
+            scope="Get Messages", ghl_convo_id=ghl_convo_id, response=messages_response.text, status_code=messages_response.status_code)
         return []
 
     all_messages = messages_response.json().get("messages", {}).get("messages", [])
     if not all_messages:
         log("error", "GET MESSAGES -- No messages found", 
-            scope="Get Messages", api_response=messages_response.text ghl_convo_id=ghl_convo_id)
+            scope="Get Messages", api_response=messages_response.text, ghl_convo_id=ghl_convo_id)
         return []
     # Compile new messages
     new_messages = []
