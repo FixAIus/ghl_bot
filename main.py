@@ -30,7 +30,7 @@ def move_convo_forward():
         # Validate request data and handle conversation ID
         validated_fields = validate_request_data(request.json)
         if not validated_fields:
-            return jsonify({"error": "Invalid request data"}), 407
+            return jsonify({"error": "Invalid request data"}), 400
 
         ghl_convo_id = validated_fields["ghl_convo_id"]
 
