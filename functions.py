@@ -74,6 +74,7 @@ def validate_request_data(data):
     if not fields["ghl_convo_id"] or fields["ghl_convo_id"] in ["", "null"]:
         fields["ghl_convo_id"] = get_conversation_id(fields["ghl_contact_id"])
         if not fields["ghl_convo_id"]:
+            log("error", "Here r fields", **fields)
             return None
         fields["add_convo_id_action"] = True  # Signal action to add convo ID to response
 
