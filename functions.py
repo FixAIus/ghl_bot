@@ -132,7 +132,7 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_
     if not all_messages:
         log("error", f"Compile Messages -- No messages found -- {ghl_contact_id}", 
             scope="Compile Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id,
-            ghl_recent_message=ghl_recent_message, api_response=messages_responses.json())
+            ghl_recent_message=ghl_recent_message, api_response=messages_response.json())
         return []
 
     new_messages = []
