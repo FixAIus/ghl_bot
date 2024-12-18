@@ -141,7 +141,7 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_
             new_messages.insert(0, {"role": "user", "content": msg["body"]})
         if msg["body"] == ghl_recent_message:
             break
-
+    
     if not new_messages:
         log("info", f"Compile Messages -- Compiling Failed -- {ghl_contact_id}", 
             scope="Compile Messages", ghl_convo_id=ghl_convo_id, 
