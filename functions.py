@@ -124,13 +124,15 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_
     if messages_response.status_code != 200:
         log("error", f"Compile Messages -- API Call Failed -- {ghl_contact_id}", 
             scope="Compile Messages", ghl_contact_id=ghl_contact_id, ghl_convo_id=ghl_convo_id,
-            status_code=messages_response.status_code, response=messages_response.text)
+            ghl_recent_message=ghl_recent_message, status_code=messages_response.status_code, response=messages_response.text)
         return []
 
     all_messages = messages_response.json().get("messages", {}).get("messages", [])
+    all_messages = 0
     if not all_messages:
         log("error", f"Compile Messages -- No messages found -- {ghl_contact_id}", 
-            scope="Compile Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
+            scope="Compile Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id,
+            ghl_recent_message=ghl_recent_message, api_response=messages_responses.json())
         return []
 
     new_messages = []
@@ -141,13 +143,14 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_
             break
 
     if not new_messages:
-        log("info", f"Compile Messages -- No new messages after filtering -- {ghl_contact_id}", 
-            scope="Compile Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
+        log("info", f"Compile Messages -- Compiling Failed -- {ghl_contact_id}", 
+            scope="Compile Messages", ghl_convo_id=ghl_convo_id, 
+            ghl_contact_id=ghl_contact_id, ghl_recent_message=ghl_recent_message)
         return []
 
     log("info", f"Compile Messages -- Successfully compiled -- {ghl_contact_id}", 
-        scope="Compile Messages", message=new_messages, ghl_convo_id=ghl_convo_id, 
-        ghl_contact_id=ghl_contact_id)
+        scope="Compile Messages", message=new_messages[::-1], ghl_convo_id=ghl_convo_id, 
+        ghl_contact_id=ghl_contact_id, ghl_recent_message=ghl_recent_message)
     return new_messages[::-1]
 
 
