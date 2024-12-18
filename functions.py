@@ -189,6 +189,7 @@ def process_message_response(thread_id, run_id, ghl_contact_id):
 def process_function_response(thread_id, run_id, run_response, ghl_contact_id):
     """Process function call response from AI."""
     tool_call = run_response.required_action.submit_tool_outputs.tool_calls[0]
+    function_args = json.loads(tool_call.function.arguments)
     openai_client.beta.threads.runs.submit_tool_outputs(
         thread_id=thread_id,
         run_id=run_id,
@@ -197,7 +198,7 @@ def process_function_response(thread_id, run_id, run_response, ghl_contact_id):
     
     log("info", f"AI FUNCTION -- Processed function call -- {ghl_contact_id}", 
         scope="AI Function", tool_call_id=tool_call.id, run_id=run_id, 
-        thread_id=thread_id, function=tool_call.function.arguments, ghl_contact_id=ghl_contact_id)
+        thread_id=thread_id, function=function_args, ghl_contact_id=ghl_contact_id)
     
-    return tool_call.function.arguments
+    return function_args
   
