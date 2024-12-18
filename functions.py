@@ -128,7 +128,6 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_
         return []
 
     all_messages = messages_response.json().get("messages", {}).get("messages", [])
-    all_messages = 0
     if not all_messages:
         log("error", f"Compile Messages -- No messages found -- {ghl_contact_id}", 
             scope="Compile Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id,
