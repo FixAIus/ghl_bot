@@ -54,7 +54,7 @@ def log(level, msg, **kwargs):
     """Centralized logger for structured JSON logging."""
     print(json.dumps({"level": level, "msg": msg, **kwargs}))
 
-
+# Verified
 def validate_request_data(data):
     """
     Validate request data, ensure required fields are present, and handle conversation ID retrieval.
@@ -81,7 +81,7 @@ def validate_request_data(data):
     return fields
 
 
-
+# Verified
 def get_conversation_id(ghl_contact_id):
     """Retrieve conversation ID from GHL API."""
     search_response = requests.get(
@@ -110,6 +110,7 @@ def get_conversation_id(ghl_contact_id):
     return conversations[0].get("id")
 
 
+
 def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_id):
     """Retrieve messages from GHL API and compile them for processing."""
     messages_response = requests.get(
@@ -121,15 +122,15 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_
         }
     )
     if messages_response.status_code != 200:
-        log("error", f"GET MESSAGES -- API Call Failed -- {ghl_contact_id}", 
-            scope="Get Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id,
+        log("error", f"Compile Messages -- API Call Failed -- {ghl_contact_id}", 
+            scope="Compile Messages", ghl_contact_id=ghl_contact_id, ghl_convo_id=ghl_convo_id,
             status_code=messages_response.status_code, response=messages_response.text)
         return []
 
     all_messages = messages_response.json().get("messages", {}).get("messages", [])
     if not all_messages:
-        log("error", f"GET MESSAGES -- No messages found -- {ghl_contact_id}", 
-            scope="Get Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
+        log("error", f"Compile Messages -- No messages found -- {ghl_contact_id}", 
+            scope="Compile Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
         return []
 
     new_messages = []
@@ -140,12 +141,12 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_
             break
 
     if not new_messages:
-        log("info", f"GET MESSAGES -- No new messages after filtering -- {ghl_contact_id}", 
-            scope="Get Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
+        log("info", f"Compile Messages -- No new messages after filtering -- {ghl_contact_id}", 
+            scope="Compile Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
         return []
 
-    log("info", f"GET MESSAGES -- Successfully compiled -- {ghl_contact_id}", 
-        scope="Get Messages", message=new_messages, ghl_convo_id=ghl_convo_id, 
+    log("info", f"Compile Messages -- Successfully compiled -- {ghl_contact_id}", 
+        scope="Compile Messages", message=new_messages, ghl_convo_id=ghl_convo_id, 
         ghl_contact_id=ghl_contact_id)
     return new_messages[::-1]
 
