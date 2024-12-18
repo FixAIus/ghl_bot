@@ -72,7 +72,7 @@ def move_convo_forward():
                 run_response,
                 validated_fields["ghl_contact_id"]
             )
-            res_obj.add_action(generated_function["type"], generated_function["details"])
+            res_obj.add_action(generated_function["name"], generated_function["arguments"])
 
         else:
             # Handle other run statuses
