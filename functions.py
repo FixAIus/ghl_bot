@@ -197,7 +197,7 @@ def process_function_response(thread_id, run_id, run_response, ghl_contact_id):
     
     log("info", f"AI FUNCTION -- Processed function call -- {ghl_contact_id}", 
         scope="AI Function", tool_call_id=tool_call.id, run_id=run_id, 
-        thread_id=thread_id, function=tool_call, ghl_contact_id=ghl_contact_id)
+        thread_id=thread_id, function=tool_call.function.arguments, ghl_contact_id=ghl_contact_id)
     
-    return tool_call.function
+    return tool_call.function.arguments
   
