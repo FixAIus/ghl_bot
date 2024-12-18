@@ -35,7 +35,7 @@ def move_convo_forward():
 
         # If conversation ID was added during validation, include it in the response
         if validated_fields.get("add_convo_id_action"):
-            res_obj.add_action("add_contact_id", {"ghl_convo_id": ghl_convo_id})
+            res_obj.add_action("add_convo_id", {"ghl_convo_id": ghl_convo_id})
 
         # Retrieve and process messages
         new_messages = retrieve_and_compile_messages(
