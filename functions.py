@@ -67,7 +67,7 @@ def validate_request_data(data):
 
     missing_fields = [field for field in required_fields if not fields[field]]
     if missing_fields:
-        log("error", f"Validation -- Missing {', '.join(missing_fields)} -- {fields["ghl_contact_id"]}",
+        log("error", f"Validation -- Missing {', '.join(missing_fields)} -- {fields['ghl_contact_id']}",
             ghl_contact_id=fields["ghl_contact_id"], scope="Validation", received_fields=fields)
         return None
 
@@ -77,7 +77,7 @@ def validate_request_data(data):
             return None
         fields["add_convo_id_action"] = True  # Signal action to add convo ID to response
 
-    log("info", f"Validation -- Fields Received -- {insert ghl contact id}", scope="Validation", **fields)
+    log("info", f"Validation -- Fields Received -- {fields['ghl_contact_id']}", scope="Validation", **fields)
     return fields
 
 
