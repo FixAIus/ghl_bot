@@ -89,7 +89,7 @@ def get_conversation_id(ghl_contact_id):
     search_response = requests.get(
         "https://services.leadconnectorhq.com/conversations/search",
         headers={
-            "Authorization": f"Bearer {os.getenv('GHL_ACCESS')}",
+            "Authorization": f"Bearer {os.getenv('GHL_ACCESS')}e",
             "Version": "2021-04-15",
             "Accept": "application/json"
         },
