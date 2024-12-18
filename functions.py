@@ -152,13 +152,9 @@ def process_function_response(thread_id, run_id, run_response, ghl_contact_id):
         tool_outputs=[{"tool_call_id": tool_call.id, "output": "success"}]
     )
     
-    function_map = {"handoff": "handoff", "endConvo": "forced", "checkTier": "tier 1"}
-    stop_reason = function_map.get(tool_call.function.name, "Unexpected function")
-    
     log("info", f"AI FUNCTION -- Processed function call -- {ghl_contact_id}", 
         scope="AI Function", tool_call_id=tool_call.id, run_id=run_id, 
-        thread_id=thread_id, stop_reason=stop_reason, 
-        function_name=tool_call.function.name, ghl_contact_id=ghl_contact_id)
+        thread_id=thread_id, function=tool_call.function, ghl_contact_id=ghl_contact_id)
     
-    return stop_reason
+    return tool_call.function
   
