@@ -67,19 +67,17 @@ def validate_request_data(data):
 
     missing_fields = [field for field in required_fields if not fields[field]]
     if missing_fields:
-        log("error", f"GENERAL -- Missing {', '.join(missing_fields)}",
-            scope="General", received_fields=fields)
+        log("error", f"Validation -- Missing {', '.join(missing_fields)} -- {fields["ghl_contact_id"]}",
+            ghl_contact_id=fields["ghl_contact_id"], scope="Validation", received_fields=fields)
         return None
 
     if not fields["ghl_convo_id"] or fields["ghl_convo_id"] in ["", "null"]:
         fields["ghl_convo_id"] = get_conversation_id(fields["ghl_contact_id"])
         if not fields["ghl_convo_id"]:
-            log("error", "GENERAL -- Missing ghl_convo_id",
-                scope="General", received_fields=fields)
             return None
         fields["add_convo_id_action"] = True  # Signal action to add convo ID to response
 
-    log("info", "GENERAL -- Valid Request", **fields)
+    log("info", f"Validation -- Fields Received -- {insert ghl contact id}", scope="Validation", **fields)
     return fields
 
 
@@ -96,15 +94,15 @@ def get_conversation_id(ghl_contact_id):
         params={"locationId": os.getenv('GHL_LOCATION_ID'), "contactId": ghl_contact_id}
     )
     if search_response.status_code != 200:
-        log("error", f"CONVO ID -- API call failed -- {ghl_contact_id}", 
-            scope="Convo ID", status_code=search_response.status_code, 
+        log("error", f"Validation -- Get convo ID API call failed -- {ghl_contact_id}", 
+            scope="Validation", status_code=search_response.status_code, 
             response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
 
     ghl_convo_id = search_response.json().get("conversations", [{}])[0].get("id")
     if not ghl_convo_id:
-        log("error", f"CONVO ID -- No ID found -- {ghl_contact_id}", 
-            scope="Convo ID", response=search_response.text, ghl_contact_id=ghl_contact_id)
+        log("error", f"Validation -- No ID found -- {ghl_contact_id}", 
+            scope="Validation", response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
     
     #log("info", f"CONVO ID -- Successfully retrieved conversation ID -- {ghl_contact_id}", 
