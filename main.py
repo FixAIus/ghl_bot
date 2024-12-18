@@ -111,7 +111,8 @@ def possibleFormat():
                     "ghl_convo_id": "afdlja;ldf"
                 }
             },
-            "message": "wwwwww"
+            "message": "wwwwww",
+            "error": "booo error"
             
         }
     )
