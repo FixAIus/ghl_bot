@@ -143,13 +143,13 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_
     
     if not new_messages:
         log("info", f"Compile Messages -- Compiling Failed -- {ghl_contact_id}", 
-            scope="Compile Messages", ghl_convo_id=ghl_convo_id, 
+            scope="Compile Messages", ghl_convo_id=ghl_convo_id, api_response=messages_response.json(),
             ghl_contact_id=ghl_contact_id, ghl_recent_message=ghl_recent_message)
         return []
 
     log("info", f"Compile Messages -- Successfully compiled -- {ghl_contact_id}", 
-        scope="Compile Messages", message=new_messages[::-1], ghl_convo_id=ghl_convo_id, 
-        ghl_contact_id=ghl_contact_id, ghl_recent_message=ghl_recent_message)
+        scope="Compile Messages", messages=[msg["content"] for msg in new_messages[::-1]], api_response=messages_response.json(),
+        ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id, ghl_recent_message=ghl_recent_message)
     return new_messages[::-1]
 
 
