@@ -100,7 +100,7 @@ def get_conversation_id(ghl_contact_id):
             response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
 
-    ghl_convo_id = search_response.json().get("conversations", [{}])[0].get("id")
+    ghl_convo_id = search_response.json().get("conversations", [])
     if not ghl_convo_id:
         log("error", f"Validation -- No ID found -- {ghl_contact_id}", 
             scope="Validation", response=search_response.text, ghl_contact_id=ghl_contact_id)
@@ -108,7 +108,7 @@ def get_conversation_id(ghl_contact_id):
     
     #log("info", f"CONVO ID -- Successfully retrieved conversation ID -- {ghl_contact_id}", 
         #scope="Convo ID", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
-    return ghl_convo_id
+    return conversations[0].get("id")
 
 
 def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_id):
