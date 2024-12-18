@@ -7,6 +7,49 @@ from openai import OpenAI
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
+
+class GHLResponseObject:
+    def __init__(self):
+        """Initialize empty response schema."""
+        self.schema = {
+            "response_type": None,
+            "action": None,
+            "message": None
+        }
+    
+    def add_message(self, message):
+        """
+        Args:
+            message (str): Message content to add
+        """
+        self.schema["message"] = message
+        if self.schema["response_type"] == "action":
+            self.schema["response_type"] = "message_action"
+        elif not self.schema["response_type"]:
+            self.schema["response_type"] = "message"
+    
+    def add_action(self, action_type, details=None):
+        """
+        Args:
+            action_type (str): Type of action ('force end', 'handoff', 'add_contact_id', etc.)
+            details (dict, optional): Additional action details
+        """
+        self.schema["action"] = {
+            "type": action_type,
+            "details": details or {}
+        }
+        if self.schema["response_type"] == "message":
+            self.schema["response_type"] = "message_action"
+        elif not self.schema["response_type"]:
+            self.schema["response_type"] = "action"
+    
+    def get_response(self):
+        """Return the final response schema, removing any None values."""
+        return {k: v for k, v in self.schema.items() if v is not None}
+
+
+
+
 def log(level, msg, **kwargs):
     """Centralized logger for structured JSON logging."""
     print(json.dumps({"level": level, "msg": msg, **kwargs}))
@@ -17,28 +60,28 @@ def validate_request_data(data):
     Validate request data, ensure required fields are present, and handle conversation ID retrieval.
     Returns validated fields dictionary or None if validation fails.
     """
-    # Define and extract required fields
     required_fields = ["thread_id", "assistant_id", "ghl_contact_id", "ghl_recent_message"]
     fields = {field: data.get(field) for field in required_fields}
     fields["ghl_convo_id"] = data.get("ghl_convo_id")
-    
-    # Check for missing required fields (excluding ghl_convo_id)
+    fields["add_convo_id_action"] = False  # Track if convo ID was added dynamically
+
     missing_fields = [field for field in required_fields if not fields[field]]
     if missing_fields:
-        log("error", f"GENERAL -- Missing {', '.join(missing_fields)}", 
+        log("error", f"GENERAL -- Missing {', '.join(missing_fields)}",
             scope="General", received_fields=fields)
         return None
-        
-    # Try to get conversation ID if missing
+
     if not fields["ghl_convo_id"] or fields["ghl_convo_id"] in ["", "null"]:
         fields["ghl_convo_id"] = get_conversation_id(fields["ghl_contact_id"])
         if not fields["ghl_convo_id"]:
-            log("error", "GENERAL -- Missing ghl_convo_id", 
+            log("error", "GENERAL -- Missing ghl_convo_id",
                 scope="General", received_fields=fields)
             return None
+        fields["add_convo_id_action"] = True  # Signal action to add convo ID to response
 
     log("info", "GENERAL -- Valid Request", **fields)
     return fields
+
 
 
 def get_conversation_id(ghl_contact_id):
@@ -146,19 +189,16 @@ def process_message_response(thread_id, run_id, ghl_contact_id):
 def process_function_response(thread_id, run_id, run_response, ghl_contact_id):
     """Process function call response from AI."""
     tool_call = run_response.required_action.submit_tool_outputs.tool_calls[0]
+    function_args = json.loads(tool_call.function.arguments)
     openai_client.beta.threads.runs.submit_tool_outputs(
         thread_id=thread_id,
         run_id=run_id,
         tool_outputs=[{"tool_call_id": tool_call.id, "output": "success"}]
     )
     
-    function_map = {"handoff": "handoff", "endConvo": "forced", "checkTier": "tier 1"}
-    stop_reason = function_map.get(tool_call.function.name, "Unexpected function")
-    
     log("info", f"AI FUNCTION -- Processed function call -- {ghl_contact_id}", 
         scope="AI Function", tool_call_id=tool_call.id, run_id=run_id, 
-        thread_id=thread_id, stop_reason=stop_reason, 
-        function_name=tool_call.function.name, ghl_contact_id=ghl_contact_id)
+        thread_id=thread_id, function=function_args, ghl_contact_id=ghl_contact_id)
     
-    return stop_reason
+    return function_args
   

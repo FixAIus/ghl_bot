@@ -1,7 +1,9 @@
 import os
 from flask import Flask, jsonify, request
+import traceback
 from functions import (
     log,
+    GHLResponseObject,
     validate_request_data,
     get_conversation_id,
     retrieve_and_compile_messages,
@@ -22,12 +24,19 @@ def move_convo_forward():
     Processes incoming messages and returns appropriate AI responses or function calls.
     """
     try:
+        # Initialize response object
+        res_obj = GHLResponseObject()
+
         # Validate request data and handle conversation ID
         validated_fields = validate_request_data(request.json)
         if not validated_fields:
             return jsonify({"error": "Invalid request data"}), 400
-            
+
         ghl_convo_id = validated_fields["ghl_convo_id"]
+
+        # If conversation ID was added during validation, include it in the response
+        if validated_fields.get("add_convo_id_action"):
+            res_obj.add_action("add_convo_id", {"ghl_convo_id": ghl_convo_id})
 
         # Retrieve and process messages
         new_messages = retrieve_and_compile_messages(
@@ -55,34 +64,61 @@ def move_convo_forward():
             )
             if not ai_content:
                 return jsonify({"error": "No AI messages found"}), 404
-            return jsonify({
-                "ai_response": ai_content,
-                "ghl_convo_id": ghl_convo_id
-            }), 200
+            res_obj.add_message(ai_content)
 
         elif run_status == "requires_action":
-            stop_reason = process_function_response(
+            generated_function = process_function_response(
                 validated_fields["thread_id"],
                 run_id,
                 run_response,
                 validated_fields["ghl_contact_id"]
             )
+            res_obj.add_action(generated_function["name"], generated_function["arguments"])
+
+        else:
+            # Handle other run statuses
             return jsonify({
-                "ghl_convo_id": ghl_convo_id,
-                "stop": stop_reason
+                "stop": True,
+                "technical_bug": run_status
             }), 200
 
-        # Handle other run statuses
-        return jsonify({
-            "stop": True,
-            "technical_bug": run_status
-        }), 200
+        # Return the finalized response schema
+        return jsonify(res_obj.get_response()), 200
 
     except Exception as e:
-        log("error", "GENERAL -- Unhandled exception occurred", 
-            scope="General", error=str(e))
-        return jsonify({"error": str(e)}), 500
+        # Capture and log the traceback
+        tb_str = traceback.format_exc()
+        log("error", "GENERAL -- Unhandled exception occurred with traceback",
+            scope="General", error=str(e), traceback=tb_str)
+        return jsonify({"error": str(e), "traceback": tb_str}), 500
 
+
+
+
+
+@app.route('/testEndpoint', methods=['POST'])
+def possibleFormat():
+    data = request.json
+    log("info", "Received request parameters", **{
+        k: data.get(k) for k in [
+            "thread_id", "assistant_id", "ghl_contact_id", 
+            "ghl_recent_message", "ghl_convo_id"
+        ]
+    })
+    return jsonify(
+        {
+            "response_type": "action, message, message_action",
+            "action": {
+                "type": "force end, handoff, add_contact_id",
+                "details": {
+                    "ghl_convo_id": "afdlja;ldf"
+                }
+            },
+            "message": "wwwwww",
+            "error": "booo error"
+            
+        }
+    )
 
 
 
