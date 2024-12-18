@@ -74,7 +74,6 @@ def validate_request_data(data):
     if not fields["ghl_convo_id"] or fields["ghl_convo_id"] in ["", "null"]:
         fields["ghl_convo_id"] = get_conversation_id(fields["ghl_contact_id"])
         if not fields["ghl_convo_id"]:
-            log("error", "Here r fields", **fields)
             return None
         fields["add_convo_id_action"] = True  # Signal action to add convo ID to response
 
@@ -100,12 +99,12 @@ def get_conversation_id(ghl_contact_id):
             response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
 
-    ghl_convo_id = search_response.json().get("conversations", [])
-    if not ghl_convo_id:
-        log("error", f"Validation -- No ID found -- {ghl_contact_id}", 
+    conversations = search_response.json().get("conversations", [])
+    if not conversations:
+        log("error", f"Validation -- No Convo ID found -- {ghl_contact_id}", 
             scope="Validation", response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
-    
+        
     #log("info", f"CONVO ID -- Successfully retrieved conversation ID -- {ghl_contact_id}", 
         #scope="Convo ID", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
     return conversations[0].get("id")
