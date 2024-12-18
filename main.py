@@ -45,7 +45,7 @@ def move_convo_forward():
             validated_fields["ghl_contact_id"]
         )
         if not new_messages:
-            return jsonify({"error": "No new messages to process"}), 200
+            return jsonify({"error": "No messages added"}), 400
 
         # Run AI thread and get response
         run_response, run_status, run_id = run_ai_thread(
