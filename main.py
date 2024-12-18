@@ -1,5 +1,6 @@
 import os
 from flask import Flask, jsonify, request
+import traceback
 from functions import (
     log,
     GHLResponseObject,
@@ -85,9 +86,11 @@ def move_convo_forward():
         return jsonify(res_obj.get_response()), 200
 
     except Exception as e:
-        log("error", "GENERAL -- Unhandled exception occurred",
-            scope="General", error=str(e))
-        return jsonify({"error": str(e)}), 500
+        # Capture and log the traceback
+        tb_str = traceback.format_exc()
+        log("error", "GENERAL -- Unhandled exception occurred with traceback",
+            scope="General", error=str(e), traceback=tb_str)
+        return jsonify({"error": str(e), "traceback": tb_str}), 500
 
 
 
