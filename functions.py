@@ -65,7 +65,7 @@ def validate_request_data(data):
     fields["ghl_convo_id"] = data.get("ghl_convo_id")
     fields["add_convo_id_action"] = False  # Track if convo ID was added dynamically
 
-    missing_fields = [field for field in required_fields if not fields[field]]
+    missing_fields = [field for field in required_fields if not fields[field] or fields[field] in ["", "null", None]]
     if missing_fields:
         log("error", f"Validation -- Missing {', '.join(missing_fields)} -- {fields['ghl_contact_id']}",
             ghl_contact_id=fields["ghl_contact_id"], scope="Validation", received_fields=fields)
