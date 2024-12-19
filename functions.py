@@ -165,8 +165,9 @@ def process_message_response(thread_id, run_id, ghl_contact_id):
     """Process completed message response from AI."""
     ai_messages = openai_client.beta.threads.messages.list(thread_id=thread_id, run_id=run_id).data
     if not ai_messages:
-        log("error", f"AI Message -- No messages found -- {ghl_contact_id}", 
-            scope="AI Message", run_id=run_id, thread_id=thread_id, ghl_contact_id=ghl_contact_id)
+        log("error", f"AI Message -- Get message failed -- {ghl_contact_id}", 
+            scope="AI Message", run_id=run_id, thread_id=thread_id, 
+            response=ai_messages, ghl_contact_id=ghl_contact_id)
         return None
 
     ai_content = ai_messages[-1].content[0].text.value
@@ -188,10 +189,17 @@ def process_function_response(thread_id, run_id, run_response, ghl_contact_id):
         run_id=run_id,
         tool_outputs=[{"tool_call_id": tool_call.id, "output": "success"}]
     )
-    
-    log("info", f"AI FUNCTION -- Processed function call -- {ghl_contact_id}", 
+
+    if "handoff" in function_args:
+        action = "handoff"
+    else:
+        action = "stop"
+
+    # Log the processed function call
+    log("info", f"AI Function -- Processed function call -- {ghl_contact_id}", 
         scope="AI Function", tool_call_id=tool_call.id, run_id=run_id, 
-        thread_id=thread_id, function=function_args, ghl_contact_id=ghl_contact_id)
+        thread_id=thread_id, function=function_args, selected_action=action, 
+        ghl_contact_id=ghl_contact_id)
     
-    return function_args
+    return action
   
