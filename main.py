@@ -45,7 +45,7 @@ def move_convo_forward():
             validated_fields["ghl_contact_id"]
         )
         if not new_messages:
-            return jsonify({"error": "No new messages to process"}), 200
+            return jsonify({"error": "No messages added"}), 400
 
         # Run AI thread and get response
         run_response, run_status, run_id = run_ai_thread(
@@ -73,14 +73,13 @@ def move_convo_forward():
                 run_response,
                 validated_fields["ghl_contact_id"]
             )
-            res_obj.add_action(generated_function["name"], generated_function["arguments"])
+            res_obj.add_action(generated_function)
 
-        else:
-            # Handle other run statuses
-            return jsonify({
-                "stop": True,
-                "technical_bug": run_status
-            }), 200
+        else:  
+            log("error", f"AI Run -- Run Failed -- {ghl_contact_id}", 
+                scope="AI Run", run_status=run_status, run_id=run_id, 
+                thread_id=thread_id, run_response=run_response, ghl_contact_id=ghl_contact_id)
+            return jsonify({"error": f"Run {run_status}"}), 400
 
         # Return the finalized response schema
         return jsonify(res_obj.get_response()), 200

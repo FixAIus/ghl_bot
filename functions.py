@@ -54,7 +54,7 @@ def log(level, msg, **kwargs):
     """Centralized logger for structured JSON logging."""
     print(json.dumps({"level": level, "msg": msg, **kwargs}))
 
-
+# Verified
 def validate_request_data(data):
     """
     Validate request data, ensure required fields are present, and handle conversation ID retrieval.
@@ -65,25 +65,23 @@ def validate_request_data(data):
     fields["ghl_convo_id"] = data.get("ghl_convo_id")
     fields["add_convo_id_action"] = False  # Track if convo ID was added dynamically
 
-    missing_fields = [field for field in required_fields if not fields[field]]
+    missing_fields = [field for field in required_fields if not fields[field] or fields[field] in ["", "null", None]]
     if missing_fields:
-        log("error", f"GENERAL -- Missing {', '.join(missing_fields)}",
-            scope="General", received_fields=fields)
+        log("error", f"Validation -- Missing {', '.join(missing_fields)} -- {fields['ghl_contact_id']}",
+            ghl_contact_id=fields["ghl_contact_id"], scope="Validation", received_fields=fields)
         return None
 
     if not fields["ghl_convo_id"] or fields["ghl_convo_id"] in ["", "null"]:
         fields["ghl_convo_id"] = get_conversation_id(fields["ghl_contact_id"])
         if not fields["ghl_convo_id"]:
-            log("error", "GENERAL -- Missing ghl_convo_id",
-                scope="General", received_fields=fields)
             return None
         fields["add_convo_id_action"] = True  # Signal action to add convo ID to response
 
-    log("info", "GENERAL -- Valid Request", **fields)
+    log("info", f"Validation -- Fields Received -- {fields['ghl_contact_id']}", scope="Validation", **fields)
     return fields
 
 
-
+# Verified
 def get_conversation_id(ghl_contact_id):
     """Retrieve conversation ID from GHL API."""
     search_response = requests.get(
@@ -96,20 +94,21 @@ def get_conversation_id(ghl_contact_id):
         params={"locationId": os.getenv('GHL_LOCATION_ID'), "contactId": ghl_contact_id}
     )
     if search_response.status_code != 200:
-        log("error", f"CONVO ID -- API call failed -- {ghl_contact_id}", 
-            scope="Convo ID", status_code=search_response.status_code, 
+        log("error", f"Validation -- Get convo ID API call failed -- {ghl_contact_id}", 
+            scope="Validation", status_code=search_response.status_code, 
             response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
 
-    ghl_convo_id = search_response.json().get("conversations", [{}])[0].get("id")
-    if not ghl_convo_id:
-        log("error", f"CONVO ID -- No ID found -- {ghl_contact_id}", 
-            scope="Convo ID", response=search_response.text, ghl_contact_id=ghl_contact_id)
+    conversations = search_response.json().get("conversations", [])
+    if not conversations:
+        log("error", f"Validation -- No Convo ID found -- {ghl_contact_id}", 
+            scope="Validation", response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
-    
+        
     #log("info", f"CONVO ID -- Successfully retrieved conversation ID -- {ghl_contact_id}", 
         #scope="Convo ID", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
-    return ghl_convo_id
+    return conversations[0].get("id")
+
 
 
 def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_id):
@@ -123,32 +122,31 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_
         }
     )
     if messages_response.status_code != 200:
-        log("error", f"GET MESSAGES -- API Call Failed -- {ghl_contact_id}", 
-            scope="Get Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id,
-            status_code=messages_response.status_code, response=messages_response.text)
+        log("error", f"Compile Messages -- API Call Failed -- {ghl_contact_id}", 
+            scope="Compile Messages", ghl_contact_id=ghl_contact_id, ghl_convo_id=ghl_convo_id,
+            ghl_recent_message=ghl_recent_message, status_code=messages_response.status_code, response=messages_response.text)
         return []
 
     all_messages = messages_response.json().get("messages", {}).get("messages", [])
     if not all_messages:
-        log("error", f"GET MESSAGES -- No messages found -- {ghl_contact_id}", 
-            scope="Get Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
+        log("error", f"Compile Messages -- No messages found -- {ghl_contact_id}", 
+            scope="Compile Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id,
+            ghl_recent_message=ghl_recent_message, api_response=messages_response.json())
         return []
 
     new_messages = []
-    for msg in all_messages:
-        if msg["direction"] == "inbound":
-            new_messages.insert(0, {"role": "user", "content": msg["body"]})
-        if msg["body"] == ghl_recent_message:
-            break
+    if any(msg["body"] == ghl_recent_message for msg in all_messages):
+        for msg in all_messages:
+            if msg["direction"] == "inbound":
+                new_messages.insert(0, {"role": "user", "content": msg["body"]})
+            if msg["body"] == ghl_recent_message:
+                break
+    else:
+        new_messages.append({"role": "user", "content": ghl_recent_message})
 
-    if not new_messages:
-        log("info", f"GET MESSAGES -- No new messages after filtering -- {ghl_contact_id}", 
-            scope="Get Messages", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
-        return []
-
-    log("info", f"GET MESSAGES -- Successfully compiled -- {ghl_contact_id}", 
-        scope="Get Messages", message=new_messages, ghl_convo_id=ghl_convo_id, 
-        ghl_contact_id=ghl_contact_id)
+    log("info", f"Compile Messages -- Successfully compiled -- {ghl_contact_id}", 
+        scope="Compile Messages", messages=[msg["content"] for msg in new_messages[::-1]], api_response=messages_response.json(),
+        ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id, ghl_recent_message=ghl_recent_message)
     return new_messages[::-1]
 
 
@@ -159,12 +157,7 @@ def run_ai_thread(thread_id, assistant_id, messages, ghl_contact_id):
         assistant_id=assistant_id,
         additional_messages=messages
     )
-    run_status, run_id = run_response.status, run_response.id
-    
-    log("info", f"AI RUN -- Thread run completed -- {ghl_contact_id}", 
-        scope="AI Run", run_status=run_status, run_id=run_id, 
-        thread_id=thread_id, ghl_contact_id=ghl_contact_id)
-    
+    run_status, run_id = run_response.status, run_response.id    
     return run_response, run_status, run_id
 
 
@@ -172,15 +165,16 @@ def process_message_response(thread_id, run_id, ghl_contact_id):
     """Process completed message response from AI."""
     ai_messages = openai_client.beta.threads.messages.list(thread_id=thread_id, run_id=run_id).data
     if not ai_messages:
-        log("error", f"AI MESSAGE -- No messages found after run completion -- {ghl_contact_id}", 
-            scope="AI Message", run_id=run_id, thread_id=thread_id, ghl_contact_id=ghl_contact_id)
+        log("error", f"AI Message -- Get message failed -- {ghl_contact_id}", 
+            scope="AI Message", run_id=run_id, thread_id=thread_id, 
+            response=ai_messages, ghl_contact_id=ghl_contact_id)
         return None
 
     ai_content = ai_messages[-1].content[0].text.value
     if "【" in ai_content and "】" in ai_content:
         ai_content = ai_content[:ai_content.find("【")] + ai_content[ai_content.find("】") + 1:]
     
-    log("info", f"AI MESSAGE -- Successfully retrieved AI response -- {ghl_contact_id}", 
+    log("info", f"AI Message -- Successfully retrieved AI response -- {ghl_contact_id}", 
         scope="AI Message", run_id=run_id, thread_id=thread_id, 
         ai_message=ai_content, ghl_contact_id=ghl_contact_id)
     return ai_content
@@ -195,10 +189,17 @@ def process_function_response(thread_id, run_id, run_response, ghl_contact_id):
         run_id=run_id,
         tool_outputs=[{"tool_call_id": tool_call.id, "output": "success"}]
     )
-    
-    log("info", f"AI FUNCTION -- Processed function call -- {ghl_contact_id}", 
+
+    if "handoff" in function_args:
+        action = "handoff"
+    else:
+        action = "stop"
+
+    # Log the processed function call
+    log("info", f"AI Function -- Processed function call -- {ghl_contact_id}", 
         scope="AI Function", tool_call_id=tool_call.id, run_id=run_id, 
-        thread_id=thread_id, function=function_args, ghl_contact_id=ghl_contact_id)
+        thread_id=thread_id, function=function_args, selected_action=action, 
+        ghl_contact_id=ghl_contact_id)
     
-    return function_args
+    return action
   
