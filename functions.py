@@ -157,12 +157,7 @@ def run_ai_thread(thread_id, assistant_id, messages, ghl_contact_id):
         assistant_id=assistant_id,
         additional_messages=messages
     )
-    run_status, run_id = run_response.status, run_response.id
-    
-    log("info", f"AI RUN -- Thread run completed -- {ghl_contact_id}", 
-        scope="AI Run", run_status=run_status, run_id=run_id, 
-        thread_id=thread_id, ghl_contact_id=ghl_contact_id)
-    
+    run_status, run_id = run_response.status, run_response.id    
     return run_response, run_status, run_id
 
 
