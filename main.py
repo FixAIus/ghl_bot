@@ -73,7 +73,7 @@ def move_convo_forward():
                 run_response,
                 validated_fields["ghl_contact_id"]
             )
-            res_obj.add_action(generated_function["name"], generated_function["arguments"])
+            res_obj.add_action(generated_function)
 
         else:  
             log("error", f"AI Run -- Run Failed -- {ghl_contact_id}", 
