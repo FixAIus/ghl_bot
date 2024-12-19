@@ -135,17 +135,14 @@ def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_
         return []
 
     new_messages = []
-    for msg in all_messages:
-        if msg["direction"] == "inbound":
-            new_messages.insert(0, {"role": "user", "content": msg["body"]})
-        if msg["body"] == ghl_recent_message:
-            break
-    
-    if not new_messages:
-        log("info", f"Compile Messages -- Compiling Failed -- {ghl_contact_id}", 
-            scope="Compile Messages", ghl_convo_id=ghl_convo_id, api_response=messages_response.json(),
-            ghl_contact_id=ghl_contact_id, ghl_recent_message=ghl_recent_message)
-        return []
+    if any(msg["body"] == ghl_recent_message for msg in all_messages):
+        for msg in all_messages:
+            if msg["direction"] == "inbound":
+                new_messages.insert(0, {"role": "user", "content": msg["body"]})
+            if msg["body"] == ghl_recent_message:
+                break
+    else:
+        new_messages.append({"role": "user", "content": ghl_recent_message})
 
     log("info", f"Compile Messages -- Successfully compiled -- {ghl_contact_id}", 
         scope="Compile Messages", messages=[msg["content"] for msg in new_messages[::-1]], api_response=messages_response.json(),
