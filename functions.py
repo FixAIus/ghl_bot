@@ -165,7 +165,7 @@ def process_message_response(thread_id, run_id, ghl_contact_id):
     """Process completed message response from AI."""
     ai_messages = openai_client.beta.threads.messages.list(thread_id=thread_id, run_id=run_id).data
     if not ai_messages:
-        log("error", f"AI MESSAGE -- No messages found after run completion -- {ghl_contact_id}", 
+        log("error", f"AI Message -- No messages found -- {ghl_contact_id}", 
             scope="AI Message", run_id=run_id, thread_id=thread_id, ghl_contact_id=ghl_contact_id)
         return None
 
@@ -173,7 +173,7 @@ def process_message_response(thread_id, run_id, ghl_contact_id):
     if "【" in ai_content and "】" in ai_content:
         ai_content = ai_content[:ai_content.find("【")] + ai_content[ai_content.find("】") + 1:]
     
-    log("info", f"AI MESSAGE -- Successfully retrieved AI response -- {ghl_contact_id}", 
+    log("info", f"AI Message -- Successfully retrieved AI response -- {ghl_contact_id}", 
         scope="AI Message", run_id=run_id, thread_id=thread_id, 
         ai_message=ai_content, ghl_contact_id=ghl_contact_id)
     return ai_content
