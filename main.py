@@ -3,11 +3,11 @@ import requests
 import json
 
 # Environment Variables
-RW_PROJECT_ID = os.getenv("RAILWAY_PROJECT_ID")
-RW_ENVIRONMENT_ID = os.getenv("RAILWAY_ENVIRONMENT_ID")
-RW_API_TOKEN = os.getenv("RAILWAY_API_TOKEN")
-GHL_CLIENT_ID = os.getenv("GHL_CLIENT_ID")
-GHL_CLIENT_SECRET = os.getenv("GHL_CLIENT_SECRET")
+#RW_PROJECT_ID = os.getenv("RAILWAY_PROJECT_ID")
+#RW_ENVIRONMENT_ID = os.getenv("RAILWAY_ENVIRONMENT_ID")
+#RW_API_TOKEN = os.getenv("RAILWAY_API_TOKEN")
+#GHL_CLIENT_ID = os.getenv("GHL_CLIENT_ID")
+#GHL_CLIENT_SECRET = os.getenv("GHL_CLIENT_SECRET")
 
 def log(level, msg, **kwargs):
     print(json.dumps({"level": level, "msg": msg, **kwargs}))
