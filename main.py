@@ -1,95 +1,47 @@
-import os
-from flask import Flask, jsonify, request
-import traceback
-from functions import (
-    log,
-    GHLResponseObject,
-    validate_request_data,
-    get_conversation_id,
-    retrieve_and_compile_messages,
-    run_ai_thread,
-    process_message_response,
-    process_function_response
-)
+from flask import Flask, request, jsonify
+from datetime import datetime, timedelta
+from threading import Timer
 
 app = Flask(__name__)
 
+# Store active timers for users
+user_timers = {}
 
+# Function to handle timer expiration
+def timer_expired(user):
+    if user in user_timers:
+        del user_timers[user]
 
+@app.route('/timer', methods=['POST'])
+def manage_timer():
+    user = request.json.get('user')
+    if not user:
+        return jsonify({"error": "User parameter is required."}), 400
 
-@app.route('/moveConvoForward', methods=['POST'])
-def move_convo_forward():
-    """
-    Main endpoint for handling conversation flow between user and AI assistant.
-    Processes incoming messages and returns appropriate AI responses or function calls.
-    """
-    try:
-        # Initialize response object
-        res_obj = GHLResponseObject()
+    current_time = datetime.now()
 
-        # Validate request data and handle conversation ID
-        validated_fields = validate_request_data(request.json)
-        if not validated_fields:
-            return jsonify({"error": "Invalid request data"}), 400
+    if user in user_timers:
+        timer_info = user_timers[user]
+        timer_info['timer'].cancel()
+        new_timer = Timer(30, timer_expired, [user])
+        new_timer.start()
+        new_end_time = current_time + timedelta(seconds=30)
+        user_timers[user] = {
+            'end_time': new_end_time,
+            'timer': new_timer
+        }
+        return jsonify({"message": f"Timer for {user} reset to end at {new_end_time}."})
+    else:
+        # Create a new timer
+        new_timer = Timer(30, timer_expired, [user])
+        new_timer.start()
+        new_end_time = current_time + timedelta(seconds=30)
+        user_timers[user] = {
+            'end_time': new_end_time,
+            'timer': new_timer
+        }
+        return jsonify({"message": f"30 second timer started for user: {user} to end at {new_end_time}."})
 
-        ghl_convo_id = validated_fields["ghl_convo_id"]
-
-        # If conversation ID was added during validation, include it in the response
-        if validated_fields.get("add_convo_id_action"):
-            res_obj.add_action("add_convo_id", {"ghl_convo_id": ghl_convo_id})
-
-        # Retrieve and process messages
-        new_messages = retrieve_and_compile_messages(
-            ghl_convo_id,
-            validated_fields["ghl_recent_message"],
-            validated_fields["ghl_contact_id"]
-        )
-        if not new_messages:
-            return jsonify({"error": "No messages added"}), 400
-
-        # Run AI thread and get response
-        run_response, run_status, run_id = run_ai_thread(
-            validated_fields["thread_id"],
-            validated_fields["assistant_id"],
-            new_messages,
-            validated_fields["ghl_contact_id"]
-        )
-
-        # Handle different response types
-        if run_status == "completed":
-            ai_content = process_message_response(
-                validated_fields["thread_id"],
-                run_id,
-                validated_fields["ghl_contact_id"]
-            )
-            if not ai_content:
-                return jsonify({"error": "No AI messages found"}), 404
-            res_obj.add_message(ai_content)
-
-        elif run_status == "requires_action":
-            generated_function = process_function_response(
-                validated_fields["thread_id"],
-                run_id,
-                run_response,
-                validated_fields["ghl_contact_id"]
-            )
-            res_obj.add_action(generated_function)
-
-        else:  
-            log("error", f"AI Run -- Run Failed -- {ghl_contact_id}", 
-                scope="AI Run", run_status=run_status, run_id=run_id, 
-                thread_id=thread_id, run_response=run_response, ghl_contact_id=ghl_contact_id)
-            return jsonify({"error": f"Run {run_status}"}), 400
-
-        # Return the finalized response schema
-        return jsonify(res_obj.get_response()), 200
-
-    except Exception as e:
-        # Capture and log the traceback
-        tb_str = traceback.format_exc()
-        log("error", "GENERAL -- Unhandled exception occurred with traceback",
-            scope="General", error=str(e), traceback=tb_str)
-        return jsonify({"error": str(e), "traceback": tb_str}), 500
 
 
 
