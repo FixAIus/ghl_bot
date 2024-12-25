@@ -17,7 +17,7 @@ def custom_serializer(obj):
 # Centralized logger function
 def log(level, msg, **kwargs):
     try:
-        print(json.dumps({"level": level, "msg": f"{msg+user_timers}"}))
+        print(json.dumps({"level": level, "msg": f"{msg} --- {str(user_timers)}"}))
     except TypeError as e:
         print(json.dumps({"level": "ERROR", "msg": "Logging serialization error", "error": str(e)}))
 
