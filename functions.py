@@ -30,10 +30,10 @@ def fetch_ghl_access_token():
         )
         if response.status_code == 200:
             response_data = response.json()
-            if response_data and 'data' in response_data:
-                token = response_data['data'].get('variables', {}).get('GHL_ACCESS')
-                if token:
-                    return token
+            if response_data and 'data' in response_data and response_data['data']:
+                variables = response_data['data'].get('variables', {})
+                if variables and 'GHL_ACCESS' in variables:
+                    return variables['GHL_ACCESS']
         log("error", f"GHL Access -- Failed to fetch token", 
             scope="GHL Access", status_code=response.status_code, 
             response=response.text)
