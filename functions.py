@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import traceback
 from openai import OpenAI
 
 
@@ -22,21 +23,24 @@ def fetch_ghl_access_token():
         response = requests.post(
             "https://backboard.railway.app/graphql/v2",
             headers={
-                "Authorization": f"Bearer {os.getenv('RW_API_TOKEN')}", 
+                "Authorization": f"Bearer {os.getenv('RAILWAY_API_TOKEN')}", 
                 "Content-Type": "application/json"
             },
             json={"query": query}
         )
         if response.status_code == 200:
-            token = response.json()['data']['variables']['GHL_ACCESS']
-            if token:
-                return token
-        log("error", f"GHL Access -- Fetch token API failed", 
+            response_data = response.json()
+            if response_data and 'data' in response_data:
+                token = response_data['data'].get('variables', {}).get('GHL_ACCESS')
+                if token:
+                    return token
+        log("error", f"GHL Access -- Failed to fetch token", 
             scope="GHL Access", status_code=response.status_code, 
             response=response.text)
     except Exception as e:
-        log("error", f"GHL Access -- Fetch token code error", 
-            scope="GHL Access", error=str(e))
+        log("error", f"GHL Access -- Request failed", 
+            scope="GHL Access", error=str(e), 
+            traceback=traceback.format_exc())
     return None
 
 
