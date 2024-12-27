@@ -28,7 +28,7 @@ def fetch_ghl_access_token():
             json={"query": query}
         )
         if response.status_code == 200:
-            token = response.json().get("data", {}).get("variables", {}).get("GHL_ACCESS")
+            token = response.json()['data']['variables']['GHL_ACCESS']
             if token:
                 return token
         log("error", f"GHL Access -- Fetch token API failed", 
