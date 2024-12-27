@@ -7,6 +7,38 @@ from openai import OpenAI
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
+def fetch_ghl_access_token():
+    """Fetch current GHL access token from Railway."""
+    query = f"""
+    query {{
+      variables(
+        projectId: "{os.getenv('RAILWAY_PROJECT_ID')}"
+        environmentId: "{os.getenv('RAILWAY_ENVIRONMENT_ID')}"
+        serviceId: "{os.getenv('RAILWAY_SERVICE_ID')}"
+      )
+    }}
+    """
+    try:
+        response = requests.post(
+            "https://backboard.railway.app/graphql/v2",
+            headers={
+                "Authorization": f"Bearer {os.getenv('RW_API_TOKEN')}", 
+                "Content-Type": "application/json"
+            },
+            json={"query": query}
+        )
+        if response.status_code == 200:
+            token = response.json().get("data", {}).get("variables", {}).get("GHL_ACCESS")
+            if token:
+                return token
+        log("error", f"GHL Access -- Fetch token API failed", 
+            scope="GHL Access", status_code=response.status_code, 
+            response=response.text)
+    except Exception as e:
+        log("error", f"GHL Access -- Fetch token code error", 
+            scope="GHL Access", error=str(e))
+    return None
+
 
 class GHLResponseObject:
     def __init__(self):
@@ -48,13 +80,11 @@ class GHLResponseObject:
         return {k: v for k, v in self.schema.items() if v is not None}
 
 
-
-
 def log(level, msg, **kwargs):
     """Centralized logger for structured JSON logging."""
     print(json.dumps({"level": level, "msg": msg, **kwargs}))
 
-# Verified
+
 def validate_request_data(data):
     """
     Validate request data, ensure required fields are present, and handle conversation ID retrieval.
@@ -81,22 +111,21 @@ def validate_request_data(data):
     return fields
 
 
-# Verified
 def get_conversation_id(ghl_contact_id):
     """Retrieve conversation ID from GHL API."""
+    token = fetch_ghl_access_token()
+    if not token:
+        return None
+
     search_response = requests.get(
         "https://services.leadconnectorhq.com/conversations/search",
         headers={
-            "Authorization": f"Bearer {os.getenv('GHL_ACCESS')}",
+            "Authorization": f"Bearer {token}",
             "Version": "2021-04-15",
             "Accept": "application/json"
         },
         params={"locationId": os.getenv('GHL_LOCATION_ID'), "contactId": ghl_contact_id}
     )
-
-    ####
-    log("info", "loaded token", ghl_token=os.getenv('GHL_ACCESS'))
-    ####
     
     if search_response.status_code != 200:
         log("error", f"Validation -- Get convo ID API call failed -- {ghl_contact_id}", 
@@ -110,18 +139,21 @@ def get_conversation_id(ghl_contact_id):
             scope="Validation", response=search_response.text, ghl_contact_id=ghl_contact_id)
         return None
         
-    #log("info", f"CONVO ID -- Successfully retrieved conversation ID -- {ghl_contact_id}", 
-        #scope="Convo ID", ghl_convo_id=ghl_convo_id, ghl_contact_id=ghl_contact_id)
     return conversations[0].get("id")
-
 
 
 def retrieve_and_compile_messages(ghl_convo_id, ghl_recent_message, ghl_contact_id):
     """Retrieve messages from GHL API and compile them for processing."""
+    token = fetch_ghl_access_token()
+    if not token:
+        log("error", f"Compile Messages -- Token fetch failed -- {ghl_contact_id}", 
+            scope="Compile Messages", ghl_contact_id=ghl_contact_id)
+        return []
+
     messages_response = requests.get(
         f"https://services.leadconnectorhq.com/conversations/{ghl_convo_id}/messages",
         headers={
-            "Authorization": f"Bearer {os.getenv('GHL_ACCESS')}",
+            "Authorization": f"Bearer {token}",
             "Version": "2021-04-15",
             "Accept": "application/json"
         }
@@ -207,4 +239,3 @@ def process_function_response(thread_id, run_id, run_response, ghl_contact_id):
         ghl_contact_id=ghl_contact_id)
     
     return action
-  
