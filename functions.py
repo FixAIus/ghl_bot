@@ -93,6 +93,11 @@ def get_conversation_id(ghl_contact_id):
         },
         params={"locationId": os.getenv('GHL_LOCATION_ID'), "contactId": ghl_contact_id}
     )
+
+    ####
+    log("info", "loaded token", ghl_token=os.getenv('GHL_ACCESS'))
+    ####
+    
     if search_response.status_code != 200:
         log("error", f"Validation -- Get convo ID API call failed -- {ghl_contact_id}", 
             scope="Validation", status_code=search_response.status_code, 
