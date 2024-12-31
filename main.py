@@ -8,11 +8,13 @@ app = Flask(__name__)
 # Store active timers for users
 user_timers = {}
 
-# Custom JSON serializer for datetime objects
-def custom_serializer(obj):
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-    raise TypeError(f"Type {type(obj)} not serializable")
+
+# Function to handle timer expiration
+def timer_expired(user):
+    if user in user_timers:
+        del user_timers[user]
+        log("INFO", f"Timer expired for user: {user}", state=user_timers)
+
 
 # Centralized logger function
 def log(level, msg, **kwargs):
@@ -21,11 +23,6 @@ def log(level, msg, **kwargs):
     except TypeError as e:
         print(json.dumps({"level": "ERROR", "msg": "Logging serialization error", "error": str(e)}))
 
-# Function to handle timer expiration
-def timer_expired(user):
-    if user in user_timers:
-        del user_timers[user]
-        log("INFO", f"Timer expired for user: {user}", state=user_timers)
 
 @app.route('/timer', methods=['POST'])
 def manage_timer():
