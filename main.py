@@ -5,8 +5,9 @@ from redis import Redis
 
 app = Flask(__name__)
 
-# Redis setup
-redis_client = Redis(host='localhost', port=6379, decode_responses=True)
+# Redis setup with environment variable
+redis_url = os.getenv('REDIS_URL')
+redis_client = Redis.from_url(redis_url, decode_responses=True)
 
 def log(level, msg, **kwargs):
     """Centralized logger for structured JSON logging."""
