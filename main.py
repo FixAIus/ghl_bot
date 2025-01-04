@@ -1,67 +1,49 @@
 import json
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
-from threading import Timer
+from redis import Redis
 
 app = Flask(__name__)
 
-# Store active timers for users
-user_timers = {}
+# Redis setup
+redis_client = Redis(host='localhost', port=6379, decode_responses=True)
 
-
-# Function to handle timer expiration
-# Literally just removes the user from user_timers
-def timer_expired(user):
-    if user in user_timers:
-        del user_timers[user]
-        log("INFO", f"Timer expired for user: {user}", state=user_timers)
-
-
-# Centralized logger function
 def log(level, msg, **kwargs):
-    try:
-        print(json.dumps({"level": level, "msg": f"{msg} --- {str(user_timers)}"}))
-    except TypeError as e:
-        print(json.dumps({"level": "ERROR", "msg": "Logging serialization error", "error": str(e)}))
+    """Centralized logger for structured JSON logging."""
+    kwargs['state'] = str(kwargs.get('state', {}))
+    print(json.dumps({"level": level, "msg": msg, **kwargs}))
 
-
-# Trigger this endpoint to start a new user timer
 @app.route('/timer', methods=['POST'])
 def manage_timer():
     user = request.json.get('user')
     if not user:
-        log("ERROR", "User parameter is missing in request.", state=user_timers)
+        log("ERROR", "User parameter is missing in request.")
         return jsonify({"error": "User parameter is required."}), 400
 
+    params = request.json.get('params', {})
+    key = f"timer:{user}"
     current_time = datetime.now()
+    end_time = (current_time + timedelta(seconds=30)).isoformat()
 
-    # Resets timer if there is already an active user timer
-    if user in user_timers:
-        timer_info = user_timers[user]
-        time_left = (timer_info['end_time'] - current_time).total_seconds()
+    # Set or reset the timer in Redis
+    redis_client.set(key, json.dumps({"end_time": end_time, "params": params}), ex=30)
+    log("INFO", f"30 second timer started --- user: {user}", state={key: redis_client.get(key)})
 
-        # Reset the timer
-        timer_info['timer'].cancel()
-        new_timer = Timer(30, timer_expired, [user])
-        new_timer.start()
-        user_timers[user] = {
-            'end_time': current_time + timedelta(seconds=30),
-            'timer': new_timer
-        }
-        log("INFO", f"Timer for {user} reset.", time_left=time_left, state=user_timers)
-        return jsonify({"message": f"Timer for {user} reset at {time_left:.2f} seconds remaining."})
+    return jsonify({"message": f"30 second timer started --- user: {user}"})
 
-    # If no active timer, start a new one
+@app.route('/expired', methods=['POST'])
+def handle_expired():
+    """Simulate handling of expired timer (e.g., triggered by a background task or keyspace notification)."""
+    user = request.json.get('user')
+    key = f"timer:{user}"
+    if redis_client.exists(key):
+        timer_data = json.loads(redis_client.get(key))
+        log("INFO", f"Handling expiration for user: {user}", params=timer_data.get('params'))
+        # Perform post-timer logic here
+        redis_client.delete(key)
+        return jsonify({"message": f"Timer for {user} expired and handled."})
     else:
-        # Create a new timer
-        new_timer = Timer(30, timer_expired, [user])
-        new_timer.start()
-        user_timers[user] = {
-            'end_time': current_time + timedelta(seconds=30),
-            'timer': new_timer
-        }
-        log("INFO", f"30 second timer started for user: {user}", state=user_timers)
-        return jsonify({"message": f"30 second timer started for user: {user}"})
+        return jsonify({"error": "No active timer found for user."}), 404
 
 
 
