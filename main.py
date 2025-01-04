@@ -10,6 +10,7 @@ user_timers = {}
 
 
 # Function to handle timer expiration
+# Literally just removes the user from user_timers
 def timer_expired(user):
     if user in user_timers:
         del user_timers[user]
@@ -24,6 +25,7 @@ def log(level, msg, **kwargs):
         print(json.dumps({"level": "ERROR", "msg": "Logging serialization error", "error": str(e)}))
 
 
+# Trigger this endpoint to start a new user timer
 @app.route('/timer', methods=['POST'])
 def manage_timer():
     user = request.json.get('user')
@@ -33,6 +35,7 @@ def manage_timer():
 
     current_time = datetime.now()
 
+    # Resets timer if there is already an active user timer
     if user in user_timers:
         timer_info = user_timers[user]
         time_left = (timer_info['end_time'] - current_time).total_seconds()
@@ -47,6 +50,8 @@ def manage_timer():
         }
         log("INFO", f"Timer for {user} reset.", time_left=time_left, state=user_timers)
         return jsonify({"message": f"Timer for {user} reset at {time_left:.2f} seconds remaining."})
+
+    # If no active timer, start a new one
     else:
         # Create a new timer
         new_timer = Timer(30, timer_expired, [user])
